@@ -1,0 +1,15 @@
+[package]
+name = "salty"
+version = "0.0.0"
+authors = ["Nicolas Stalder <n@stalder.io>"]
+edition = "2018"
+description = "Small sweet Ed25519 for microcontrollers"
+repository = "https://github.com/nickray/salty"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "NaCl"]
+
+[dependencies]
+
+[features]
+cortex-m4 = []
