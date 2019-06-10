@@ -6,9 +6,16 @@ build build-release:
 build-debug:
 	cargo build
 
+fmt:
+	cargo fmt
+
 rustup:
 	rustup target add $(TARGET)
 	rustup component add rustfmt
 
-fmt:
-	cargo fmt
+test:
+	cargo test
+
+watch:
+	cargo watch -x 'build --release'
+

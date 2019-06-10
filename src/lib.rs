@@ -3,7 +3,7 @@
 // pub mod types;
 // pub mod implementations;
 
-use byteorder::{ByteOrder, LittleEndian, BigEndian};
+use byteorder::{BigEndian, ByteOrder, LittleEndian};
 
 pub const PUBLIC_KEY_BYTES: usize = 32;
 pub const SECRET_KEY_BYTES: usize = 32;
@@ -13,48 +13,47 @@ pub const SHA512_BYTES: usize = 64;
 struct SigningPublicKey(pub [u8; PUBLIC_KEY_BYTES]);
 struct SigningSecretKey(pub [u8; SECRET_KEY_BYTES]);
 
-// this is "static", what should we do here?
-// dl64 is "big-endian" [u8; 8] -> u64
-fn dl64(x: &[u8]) -> u64 {
-    BigEndian::read_u64(x)
-    // let mut u: u64 = 0;
-    // for i in 0..8 {
-    //     u = (u << 8) | x[i] as u64;
-    // }
-    // u
-}
-
 pub mod hash {
-    use byteorder::{ByteOrder, BigEndian};
+    use byteorder::{BigEndian, ByteOrder};
+    use core::num::Wrapping;
 
     #[allow(non_snake_case)]
-    fn R(x: u64, c: i32) -> u64{
-        (x >> c) | (x << (64 - c))
+    // this is `rotate-right(x, n)` for 64-bit words
+    // implicitly, 0 <= n < 64
+    fn R(w: Wrapping<u64>, n: usize) -> Wrapping<u64> {
+        (w >> n) | (w << (64 - n))
     }
     #[allow(non_snake_case)]
-    fn Ch(x: u64, y: u64, z: u64) -> u64 {
+    // this is "choose", input `x` picks the output bit from y or z:
+    // if bit `i` of `x` is 1, then output is bit `i` from `y`,
+    // else bit `i` from `z`.
+    fn Ch(x: Wrapping<u64>, y: Wrapping<u64>, z: Wrapping<u64>) -> Wrapping<u64> {
         (x & y) ^ (!x & z)
     }
     #[allow(non_snake_case)]
-    fn Maj(x: u64, y: u64, z: u64) -> u64 {
-        (x & y) ^ (x & z) & (y ^ z)
+    // this is "majority", each bit is the majority of the
+    // three input bits of x, y, z at this index
+    fn Maj(x: Wrapping<u64>, y: Wrapping<u64>, z: Wrapping<u64>) -> Wrapping<u64> {
+        (x & y) ^ (x & z) ^ (y & z)
     }
     #[allow(non_snake_case)]
-    fn Sigma0(x: u64) -> u64 {
+    fn Sigma0(x: Wrapping<u64>) -> Wrapping<u64> {
         R(x, 28) ^ R(x, 34) ^ R(x, 39)
     }
     #[allow(non_snake_case)]
-    fn Sigma1(x: u64) -> u64 {
+    fn Sigma1(x: Wrapping<u64>) -> Wrapping<u64> {
         R(x, 14) ^ R(x, 18) ^ R(x, 41)
     }
-    fn sigma0(x: u64) -> u64 {
-        R(x,  1) ^ R(x,  8) ^ (x >> 7)
+    fn sigma0(x: Wrapping<u64>) -> Wrapping<u64> {
+        R(x, 1) ^ R(x, 8) ^ (x >> 7)
     }
-    fn sigma1(x: u64) -> u64 {
+    fn sigma1(x: Wrapping<u64>) -> Wrapping<u64> {
         R(x, 19) ^ R(x, 61) ^ (x >> 6)
     }
 
-    #[rustfmt_skip]
+    #[rustfmt::skip]
+    // fyi, these are the first 64 bits of the fractional parts of
+    // the cube roots of the first 80 primes
     static K: [u64; 80] = [
       0x428a2f98d728ae22, 0x7137449123ef65cd, 0xb5c0fbcfec4d3b2f, 0xe9b5dba58189dbbc,
       0x3956c25bf348b538, 0x59f111f1b605d019, 0x923f82a4af194f9b, 0xab1c5ed5da6d8118,
@@ -78,26 +77,84 @@ pub mod hash {
       0x4cc5d4becb3e42b6, 0x597f299cfc657e2a, 0x5fcb6fab3ad6faec, 0x6c44198c4a475817,
     ];
 
-    fn crypto_hash_blocks(x: &mut [u8; 64], m: &[u8], n: u64) -> u64 {
-        let mut a = [0u64; 8];
-        for (entry, chunk) in a.iter_mut().zip(x.chunks(8)) {
-            // *entry = crate::dl64(chunk)
-            *entry = crate::BigEndian::read_u64(chunk)
+    fn hash_blocks(digest: &mut [u8; 64], msg: &[u8]) -> usize {
+        #![allow(non_snake_case)]
+
+        // convert digest (u8-array) into hash parts (u64-words array)
+        let mut H: [Wrapping<u64>; 8] = Default::default();//[Wrapping(0); 8];
+        for (h, chunk) in H.iter_mut().zip(digest.chunks(8)) {
+            *h = Wrapping(BigEndian::read_u64(chunk));
         }
-        // for i in 0..8 {
-        //     a[i] = crate::dl64(&x[8 * i..8 * (i + 1)]);
-        // }
-        let z = a.clone();
 
-        let b = [0u64; 8];
-        let w = [0u64; 16];
-        let t: u64 = 0;
+        let unprocessed = msg.len() & 127; // remainder modulo 128
+        for block in msg[..msg.len() - unprocessed].chunks(128) {
 
+            // W is the "message schedule", it is updated below
+            let mut W: [Wrapping<u64>; 16] = Default::default();//[Wrapping(0); 16];
+            for (w, chunk) in W.iter_mut().zip(block.chunks(8)) {
+                *w = Wrapping(BigEndian::read_u64(chunk));
+            }
 
-        n
+            // initialize "working variables" with previous hash
+            let mut a = H[0];
+            let mut b = H[1];
+            let mut c = H[2];
+            let mut d = H[3];
+            let mut e = H[4];
+            let mut f = H[5];
+            let mut g = H[6];
+            let mut h = H[7];
+
+            // apply 80 rounds
+            for t in 0..80 {
+                let T1 = h + Sigma1(e) + Ch(e, f, g) + Wrapping(K[t]) + W[t % 16];
+                let T2 = Sigma0(a) + Maj(a, b, c);
+                h = g;
+                g = f;
+                f = e;
+                e = d + T1;
+                d = c;
+                c = b;
+                b = a;
+                a = T1 + T2;
+
+                // update message schedule if necessary
+                if t % 16 == 15 {
+                    // TODO: need Wprev??
+                    // let Wprev = W.clone();
+                    // for j in 0..16 {
+                    //     W[j] +=      Wprev[(j +  9) % 16]
+                    //         + sigma0(Wprev[(j +  1) % 16])
+                    //         + sigma1(Wprev[(j + 14) % 16]);
+                    // }
+                    for j in 0..16 {
+                        W[j] +=      W[(j +  9) % 16]
+                            + sigma0(W[(j +  1) % 16])
+                            + sigma1(W[(j + 14) % 16]);
+                    }
+                }
+            }
+            H[0] += a;
+            H[1] += b;
+            H[2] += c;
+            H[3] += d;
+            H[4] += e;
+            H[5] += f;
+            H[6] += g;
+            H[7] += h;
+        }
+
+        // convert hash parts (u64-words array) back into digest (u8-array)
+        for (d, h) in digest.chunks_mut(8).zip(H.iter()) {
+            BigEndian::write_u64(d, h.0);
+        }
+
+        unprocessed
     }
 
-    #[rustfmt_skip]
+    #[rustfmt::skip]
+    // fyi, these are the first 64 bits of the fractional parts
+    // of the square roots of the first 8 primes
     static IV: [u8; 64] = [
       0x6a,0x09,0xe6,0x67,0xf3,0xbc,0xc9,0x08,
       0xbb,0x67,0xae,0x85,0x84,0xca,0xa7,0x3b,
@@ -109,8 +166,44 @@ pub mod hash {
       0x5b,0xe0,0xcd,0x19,0x13,0x7e,0x21,0x79,
     ];
 
-    // fn hash() {
-    // }
+    // generates a 64 bytes hash of the `msg`
+    // https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf
+    //
+    // steps:
+    // - pad message to obtain 128 byte blocks
+    // - start with IV
+    // - "hash in" each block in turn
+    pub fn sha512(digest: &mut [u8; 64], msg: &[u8]) {
+
+        let l = msg.len();
+        assert!(l < 2^125);  // u128-encoded length is in bits
+
+        // initialize digest with the initialisation vector
+        // let mut h: [u8; 64] = IV.clone();
+        digest.copy_from_slice(&IV);
+
+        // hash full (128 bytes) blocks from message
+        let unprocessed = hash_blocks(digest, msg);
+
+        // generate padding (can be 1 or 2 blocks of 128 bytes)
+        let mut padding: [u8; 256] = [0u8; 256];
+        let padding_length = match unprocessed < 112 {
+            true => 128,
+            false => 256,
+        };
+        // first: remaining message
+        padding[..unprocessed].copy_from_slice(&msg[l - unprocessed..]);
+        // then: bit 1 followed by zero bits until...
+        padding[unprocessed] = 128;
+        // ...message length in bits (NB: l is in bytes)
+        padding[padding_length - 9] = (l >> 61) as u8;
+        BigEndian::write_u64(&mut padding[padding_length - 8..], (l << 3) as u64);
+
+        let padding = &padding[..padding_length];
+        hash_blocks(digest, padding);
+
+        // digest.copy_from_slice(&h);
+    }
 }
 
 pub mod sign {
@@ -121,7 +214,68 @@ pub mod sign {
     //     d[31] &= 127;
     //     d[31] |= 64;
 
-
     //     public_key.copy_from_slice(secret_key[32..]);
     // }
+}
+
+// #[cfg(test)]
+mod tests {
+    // use super::hash;
+
+    #[test]
+    fn test_empty_hash() {
+        let mut empty_hash = [0u8; 64];
+        super::hash::sha512(&mut empty_hash, &[]);
+        #[rustfmt::skip]
+        let expected: [u8; 64] = [
+            0xcf, 0x83, 0xe1, 0x35, 0x7e, 0xef, 0xb8, 0xbd,
+            0xf1, 0x54, 0x28, 0x50, 0xd6, 0x6d, 0x80, 0x07,
+            0xd6, 0x20, 0xe4, 0x05, 0x0b, 0x57, 0x15, 0xdc,
+            0x83, 0xf4, 0xa9, 0x21, 0xd3, 0x6c, 0xe9, 0xce,
+            0x47, 0xd0, 0xd1, 0x3c, 0x5d, 0x85, 0xf2, 0xb0,
+            0xff, 0x83, 0x18, 0xd2, 0x87, 0x7e, 0xec, 0x2f,
+            0x63, 0xb9, 0x31, 0xbd, 0x47, 0x41, 0x7a, 0x81,
+            0xa5, 0x38, 0x32, 0x7a, 0xf9, 0x27, 0xda, 0x3e,
+        ];
+        // println!("{:?}", empty_hash[..8]);
+        // println!("{:?}", expected[..8]);
+        assert_eq!(empty_hash[..16], expected[..16]);
+
+
+    }
+
+    #[test]
+    fn test_non_empty() {
+        let mut digest = [0u8; 64];
+
+        // short example
+        super::hash::sha512(&mut digest, &"salty".as_bytes());
+        let expected: [u8; 64] = [
+            0x34, 0x69, 0x63, 0xb3, 0xd8, 0x46, 0x88, 0x5f,
+            0x4a, 0x5c, 0x18, 0x60, 0x51, 0xd0, 0x09, 0x03,
+            0x8b, 0x82, 0xc7, 0x48, 0xfb, 0xec, 0xc2, 0x8c,
+            0x2c, 0x79, 0x27, 0xc5, 0xf8, 0x80, 0xe2, 0xb3,
+            0x60, 0x1b, 0x0e, 0x83, 0x4c, 0xbf, 0xcf, 0xd6,
+            0x35, 0x7b, 0xec, 0x8e, 0x01, 0x82, 0xa8, 0xc4,
+            0x90, 0x0f, 0xbe, 0xa2, 0x7b, 0x06, 0x0e, 0x5b,
+            0xa8, 0xc3, 0x1d, 0x3b, 0xc2, 0xbc, 0xc3, 0x34,
+        ];
+        assert_eq!(digest[..16], expected[..16]);
+
+        // longer example (>= 122 bytes)
+        let example = "saltysaltysaltysaltysaltysaltysaltysaltysaltysaltysaltysaltysaltysaltysaltysaltysaltysaltysaltysaltysaltysaltysaltysaltysalty";
+        super::hash::sha512(&mut digest, &example.as_bytes());
+        let expected: [u8; 64] = [
+            0x57, 0xd3, 0x71, 0x18, 0x15, 0x72, 0x91, 0xbe,
+            0x02, 0x6b, 0x72, 0x46, 0x81, 0xb4, 0xcd, 0xb3,
+            0xb6, 0xc3, 0x18, 0x78, 0x0e, 0x28, 0x95, 0x85,
+            0xb5, 0xed, 0x69, 0x8f, 0x35, 0x4d, 0x54, 0xc9,
+            0x1c, 0xfd, 0x6e, 0xd3, 0xfd, 0xf8, 0xb6, 0x0f,
+            0x6e, 0x37, 0x41, 0x16, 0x9a, 0x3b, 0xbc, 0xb9,
+            0xc1, 0x67, 0x99, 0xf8, 0x45, 0x0c, 0xad, 0x16,
+            0x59, 0x18, 0xb9, 0xe9, 0xcb, 0x51, 0x4a, 0x38,
+        ];
+        assert_eq!(digest[..16], expected[..16]);
+    }
+
 }
