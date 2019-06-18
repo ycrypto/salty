@@ -3,15 +3,256 @@
 // pub mod types;
 // pub mod implementations;
 
-use byteorder::{BigEndian, ByteOrder, LittleEndian};
+// use byteorder::{BigEndian, ByteOrder, LittleEndian};
 
-pub const PUBLIC_KEY_BYTES: usize = 32;
-pub const SECRET_KEY_BYTES: usize = 32;
-pub const SHA256_BYTES: usize = 64;
-pub const SHA512_BYTES: usize = 64;
+/// the non-optimized arithmetic of the base field
+/// of Curve25519, Z/lZ where l = 2^255 - 19
+///
+/// this is what we will replace with Haase's assembly code in v0.3.0
+pub mod field {
+    // type FieldElement = [i64; 16];
+    pub struct FieldElement([i64; 16]);
 
-struct SigningPublicKey(pub [u8; PUBLIC_KEY_BYTES]);
-struct SigningSecretKey(pub [u8; SECRET_KEY_BYTES]);
+    use core::ops::Add;
+    impl<'a, 'b> Add<&'b FieldElement> for &'a FieldElement {
+        type Output = FieldElement;
+
+        // TODO: TweetNaCl doesn't do any reduction here, why not?
+        fn add(self, other: &'b FieldElement) -> FieldElement {
+            let mut sum: [i64; 16] = Default::default();
+            for (s, (x, y)) in sum.iter_mut().zip(self.0.iter().zip(other.0.iter())) {
+                *s = x + y
+            }
+            FieldElement(sum)
+        }
+    }
+
+    use core::ops::Sub;
+    impl<'a, 'b> Sub<&'b FieldElement> for &'a FieldElement {
+        type Output = FieldElement;
+
+        // TODO: TweetNaCl doesn't do any reduction here, why not?
+        fn sub(self, other: &'b FieldElement) -> FieldElement {
+            let mut sum: [i64; 16] = Default::default();
+            for (s, (x, y)) in sum.iter_mut().zip(self.0.iter().zip(other.0.iter())) {
+                *s = x - y
+            }
+            FieldElement(sum)
+        }
+    }
+
+    // impl FieldElement {
+    //     fn reduce(&mut self) {
+
+    //     }
+    // }
+
+    fn reduce(fe: &mut FieldElement) {
+        // TODO: multiplication calls this twice
+        // What exactly are the guarantees here?
+        // Why don't we do this twice if it's needed?
+        for i in 0..16 {
+            // add 2**16
+            fe.0[i] += 1 << 16;
+            // "carry" part, everything over radix 2**16
+            let carry = fe.0[i] >> 16;
+
+            // a) i < 15: add carry bit, subtract 1 to compensate addition of 2^16
+            // --> o[i + 1] += c - 1  // add carry bit, subtract
+            // b) i == 15: wraps around to index 0 via 2^256 = 38
+            // --> o[0] += 38 * (c - 1)
+            fe.0[(i + 1) * ((i < 16) as usize)] +=
+                carry - 1 + 37 * (carry - 1) * ((i == 15) as i64);
+            // get rid of carry bit
+            // TODO: why not get rid of it immediately. kinda clearer
+            fe.0[i] -= carry << 16;
+
+        }
+    }
+
+    use core::ops::Mul;
+    impl<'a, 'b> Mul<&'b FieldElement> for &'a FieldElement {
+        type Output = FieldElement;
+
+        fn mul(self, other: &'b FieldElement) -> FieldElement {
+
+            // start with so-called "schoolbook multiplication"
+            // TODO: nicer way to do this with iterators?
+            let mut pre_product: [i64; 31] = Default::default();
+            for i in 0..16 {
+                for j in 0..16 {
+                    pre_product[i + j] += self.0[i] * other.0[j];
+                }
+            }
+
+            // reduce modulo 2**256 - 38
+            // (en route to reduction modulo 2**255 - 19)
+            for i in 0..15 {
+                pre_product[i] += 38 * pre_product[i + 16];
+            }
+
+            // ble, would prefer to call pre_product just product,
+            // but the two-step initialize then copy doesn't seem
+            // to work syntactically.
+            // also: really hope the initialization of `product`
+            // is optimized away...
+            let mut product: [i64; 16] = Default::default();
+            product.copy_from_slice(&mut pre_product[..16]);
+
+            let mut fe = FieldElement(product);
+            // normalize such that all limbs lie in [0, 2^16)
+            // TODO: why twice? why is twice enough?
+            reduce(&mut fe);
+            reduce(&mut fe);
+
+            fe
+        }
+    }
+
+    // TODO: one way to avoid this is by using a macro.
+    // Is there anything nicer?
+    impl<'a> Mul<&'a FieldElement> for FieldElement {
+        type Output = FieldElement;
+
+        fn mul(self, other: &'a FieldElement) -> Self::Output {
+            &self * other
+        }
+    }
+
+    impl<'a> Mul<FieldElement> for &'a FieldElement {
+        type Output = FieldElement;
+
+        fn mul(self, other: FieldElement) -> Self::Output {
+            self * &other
+
+        }
+    }
+
+    // non-optimized, but showing off our new multiplication trait \o/
+    fn square(fe: &FieldElement) -> FieldElement {
+        fe * fe
+    }
+
+    // something-something about generics vs function overloading
+    // fn square(fe: FieldElement) -> FieldElement {
+    //     fe * fe
+    // }
+
+    fn invert(fe: &FieldElement) -> FieldElement {
+        // TODO: possibly assert! that fe != 0?
+
+        // make our own private copy
+        let mut inverse = fe.clone();
+
+        // exponentiate with 2**255 - 21,
+        // which by Fermat's little theorem is the same as inversion
+        for i in  (0..=253).rev() {
+            inverse = square(&inverse); // eep...
+            if i !=2 && i != 4 {
+                inverse = inverse * fe;
+            }
+        }
+
+        inverse
+    }
+
+    use core::ops::Div;
+    impl<'a, 'b> Div<&'b FieldElement> for &'a FieldElement {
+        type Output = FieldElement;
+
+        fn div(self, other: &'b FieldElement) -> FieldElement {
+            self * invert(other)
+        }
+    }
+
+    pub fn conditional_swap(p: &mut FieldElement, q: &mut FieldElement, b: i64) {
+        // TODO: change signature to `b: bool`?
+        //
+        // swap p and q iff b (is true)
+        //
+        // a) b = 0
+        // --> mask = 0, t = 0, p and q remain as they were
+        //
+        // b) b = 1
+        // --> mask = 0xFFFFFFFF, t = p[i]^q[i],
+        // so p[i] <- p[i]^p[i]^q[i] = q[i] and similarly
+        // q[i] <- p[i], so they swap
+        //
+        // see test_bit_fiddling below for "verification"
+
+        let mask: i64 = !(b - 1);
+        for (pi, qi) in p.0.iter_mut().zip(q.0.iter_mut()) {
+            let t = mask & (*pi ^ *qi);
+            *pi ^= t;
+            *qi ^= t;
+
+        }
+    }
+    // fn conditional_move(r: &mut FieldElement, x: &FieldElement, b: u8) {
+    //     // for (ri, xi) in r.iter_mut().zip(x.iter()) {
+    //     //     let mask: i32 = b as _;
+    //     //     *ri ^= mask & (xi ^ *ri);
+    //     // }
+    // }
+
+    // called `unpack225519` in TweetNaCl
+    // described as "load integer mod 2**255 - 19 in TweetNaCl paper
+    pub fn from_le_bytes(bytes: &[u8; 32]) -> FieldElement {
+        let mut limbs: [i64; 16] = Default::default();
+        for i in 0..16 {
+            limbs[i] = (bytes[2 * i] as i64) + (bytes[2 * i + 1] as i64) << 8;
+        }
+
+        // some kind of safety check
+        limbs[15] &= 0x7fff;
+
+        FieldElement(limbs)
+    }
+
+    impl Clone for FieldElement {
+        fn clone(&self) -> Self {
+            FieldElement(self.0.clone())
+        }
+    }
+    // called `pack255169` in TweetNaCl
+    // described as "freeze integer mod 2**255 - 19 and store" in TweetNaCl paper
+    // TODO: figure out what this actually does and check the transliteration is correct...
+    pub fn freeze_to_le_bytes(fe: &FieldElement) -> [u8; 32] {
+        // make our own private copy
+        let mut fe = fe.clone();
+
+        // three times' the charm??
+        // TODO: figure out why :)
+        reduce(&mut fe);
+        reduce(&mut fe);
+        reduce(&mut fe);
+
+        // let m_buf: [i64; 16] = Default::default();
+        // let mut m: FieldElement = FieldElement(m_buf);
+        let mut m: [i64; 16] = Default::default();
+        for _j in 0..2 {
+            m[0] = fe.0[0] - 0xFFED;
+            for i in 1..15 {
+                m[i] = fe.0[i] - 0xFFFF - ((m[i - 1] >> 16) & 1);
+                m[i - 1] &= 0xFFFF;
+            }
+
+            m[15] = fe.0[15] - 0x7FFFF - ((m[14] >> 16) & 1);
+            let b = (m[15] >> 16) & 1;
+            m[14] &= 0xFFFF;
+            conditional_swap(&mut fe, &mut FieldElement(m), 1 - b);
+        }
+
+        let mut buf: [u8; 32] = Default::default();
+        for i in 0..16 {
+            buf[2 * i] = fe.0[i] as u8;//& 0xFF;
+            buf[2 * i + 1] = (fe.0[i] >> 8) as u8;
+        }
+
+        buf
+    }
+
+}
 
 pub mod hash {
     use byteorder::{BigEndian, ByteOrder};
@@ -79,17 +320,20 @@ pub mod hash {
 
     fn hash_blocks(digest: &mut [u8; 64], msg: &[u8]) -> usize {
         #![allow(non_snake_case)]
+        use core::convert::TryInto;
 
         // convert digest (u8-array) into hash parts (u64-words array)
         let mut H: [Wrapping<u64>; 8] = Default::default();//[Wrapping(0); 8];
         for (h, chunk) in H.iter_mut().zip(digest.chunks(8)) {
-            *h = Wrapping(BigEndian::read_u64(chunk));
+            // *h = Wrapping(BigEndian::read_u64(chunk));
+            *h = Wrapping(u64::from_be_bytes(chunk.try_into().unwrap()));
         }
 
         let unprocessed = msg.len() & 127; // remainder modulo 128
         for block in msg[..msg.len() - unprocessed].chunks(128) {
 
             // W is the "message schedule", it is updated below
+            // This is like Section 6.1.3 from FIPS 180.
             let mut W: [Wrapping<u64>; 16] = Default::default();//[Wrapping(0); 16];
             for (w, chunk) in W.iter_mut().zip(block.chunks(8)) {
                 *w = Wrapping(BigEndian::read_u64(chunk));
@@ -167,7 +411,7 @@ pub mod hash {
     ];
 
     // generates a 64 bytes hash of the `msg`
-    // https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf
+    // https://dx.doi.org/10.6028/NIST.FIPS.180-4
     //
     // steps:
     // - pad message to obtain 128 byte blocks
@@ -176,7 +420,7 @@ pub mod hash {
     pub fn sha512(digest: &mut [u8; 64], msg: &[u8]) {
 
         let l = msg.len();
-        assert!(l < 2^125);  // u128-encoded length is in bits
+        // assert!(l >> 125 == 0);  // u128-encoded length is in bits
 
         // initialize digest with the initialisation vector
         // let mut h: [u8; 64] = IV.clone();
@@ -207,14 +451,36 @@ pub mod hash {
 }
 
 pub mod sign {
-    // fn generate_keypair(seed: &[u8; 32], public_key: &mut SigningPublicKey, secret_key: &mut SigningSecretKey) {
-    //     // TODO: name `buf` (was: `d`)
-    //     let d = hash(secret_key, 32);
-    //     d[0] &= 248;
-    //     d[31] &= 127;
-    //     d[31] |= 64;
+    pub const PUBLIC_KEY_BYTES: usize = 32;
+    pub const SECRET_KEY_BYTES: usize = 32;
+    pub const SHA256_BYTES: usize = 64;
+    pub const SHA512_BYTES: usize = 64;
 
-    //     public_key.copy_from_slice(secret_key[32..]);
+    pub struct SigningPublicKey(pub [u8; PUBLIC_KEY_BYTES]);
+    pub struct SigningSecretKey(pub [u8; SECRET_KEY_BYTES]);
+
+    // fn generate_keypair(seed: &[u8; 32], public_key: &mut SigningPublicKey, secret_key: &mut SigningSecretKey) {
+    //     // secret key is "just" the random seed
+    //     let mut digest: [u8; 64] = [0u8; 64];
+    //     secret_key.0.copy_from_slice(seed);
+
+    //     // public key is...
+    //     super::hash::sha512(&mut digest, &secret_key.0);
+    //     // Ed25519 private keys clamp the scalar to ensure two things:
+    //     //   1: integer value is in L/2 .. L, to avoid small-logarithm
+    //     //      non-wraparaound
+    //     //   2: low-order 3 bits are zero, so a small-subgroup attack won't learn
+    //     //      any information
+    //     // set the top two bits to 01, and the bottom three to 000
+
+    //     // Curve25519 contains 2-torsion (of order 8),
+    //     // this gets rid of the torsion
+    //     digest[0] &= 248;
+    //     // TODO: Explanation
+    //     digest[31] &= 127;
+    //     digest[31] |= 64;
+
+    //     // public_key.copy_from_slice(secret_key.0[32..]);
     // }
 }
 
@@ -265,6 +531,7 @@ mod tests {
         // longer example (>= 122 bytes)
         let example = "saltysaltysaltysaltysaltysaltysaltysaltysaltysaltysaltysaltysaltysaltysaltysaltysaltysaltysaltysaltysaltysaltysaltysaltysalty";
         super::hash::sha512(&mut digest, &example.as_bytes());
+        // use core::array::FixedSizeArray;
         let expected: [u8; 64] = [
             0x57, 0xd3, 0x71, 0x18, 0x15, 0x72, 0x91, 0xbe,
             0x02, 0x6b, 0x72, 0x46, 0x81, 0xb4, 0xcd, 0xb3,
@@ -275,7 +542,31 @@ mod tests {
             0xc1, 0x67, 0x99, 0xf8, 0x45, 0x0c, 0xad, 0x16,
             0x59, 0x18, 0xb9, 0xe9, 0xcb, 0x51, 0x4a, 0x38,
         ];
+        assert!(digest.iter().zip(expected.iter()).all(|(a, b)| a == b));
+        // assert!(digest.iter().zip(expected.iter()).all_equal());
+        // assert!(&digest.as_slice() == &expected.as_slice());
+        // assert!(&digest.as_slice() == &expected.as_slice());
         assert_eq!(digest[..16], expected[..16]);
     }
 
+    #[test]
+    fn test_afl_outputs() {
+        let mut digest = [0u8; 64];
+
+        let example = [
+            0x17u8,0x0,0xfd,0x0,0x0,0x1,0x0,0xfb,0x0,0xf2,0x0,0x0,0x0,0x0,0x61,0xff,0xff,0xff,0x8,0x0,0xeb,0xff,0x0,0xe,0x0,0xf2,0xff,0xff,0xff,0x0,0x0,0xeb,0xff,0x0,0x0,0x0,0x0,0x17,0x0,0x0,0x0,0x7f,0xff,0xf2,0x0,0x0,0x0,0x0,0x61,0xff,0xff,0xff,0x6e,0x69,0x63,0x6b,0x72,0x61,0x79,0xa,0x17,0x0,0xf,0x0,0xf2,0x0,0x0,0x0,0x0,0x61,0xff,0xff,0xff,0x0,0x0,0xeb,0xff,0x0,0x0,0x0,0x0,0x17,0x0,0x0,0x16,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0xff,0x0,0x0,0x14,0x0,0xd,0x0,0x0,0x4a,0x4a,0x4a,0x4a,0x4a,0x4a,0x4a,0x4a,0x4a,0x4a,0x4a,0x4a,0x4a,0x4a,0x4a,0x4a,0x4a,0x4a,0x2c,0x4a,0xa,0x4a,0x4a,0x4a,0x4a,0x4a,0x0
+        ];
+        super::hash::sha512(&mut digest, &example);
+    }
+
+    #[test]
+    fn test_bit_fiddling() {
+        let b: i64 = 0;
+        let mask = !(b - 1);
+        assert_eq!(mask, 0);
+
+        let b: i64 = 1;
+        let mask = !(b - 1);
+        assert_eq!(mask as u64, 0xFFFFFFFFFFFFFFFF);
+    }
 }
