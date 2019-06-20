@@ -13,6 +13,8 @@
 Small sweet Ed25519 for microcontrollers.  
 With optimizations for Cortex-M4.
 
+**NOTE: This is work-in-progress and not fit for use!**
+
 ## Goals
 
 From highest to lowest priority:
@@ -23,6 +25,8 @@ From highest to lowest priority:
 - speed
 
 ## The Plan
+
+None of these releases exist yet.
 
 ### v0.1.0
 
@@ -55,6 +59,6 @@ Completion! The rest of NaCl
 
 #### License
 
-<sup>Salty is licensed under either of Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE)) or MIT License ([LICENSE-MIT](LICENSE-MIT)) at your option.</sup>
+<sup>Salty is licensed under either of [Apache License, Version 2.0](LICENSE-APACHE) or [MIT License](LICENSE-MIT) at your option.</sup>
 <br>
 <sub>Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.</sub>
