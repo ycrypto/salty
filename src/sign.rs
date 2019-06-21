@@ -1,23 +1,23 @@
 pub const SEED_BYTES: usize = 32;
-type SeedBuffer = [u8; SEED_BYTES];
+pub type SeedBuffer = [u8; SEED_BYTES];
 #[derive(Clone,Debug,Default)]
 pub struct Seed(pub SeedBuffer);
 
 pub const SECRET_SCALAR_BYTES: usize = 32;
-type SecretScalarBuffer = [u8; SECRET_SCALAR_BYTES];
+pub type SecretScalarBuffer = [u8; SECRET_SCALAR_BYTES];
 #[derive(Clone,Debug,Default)]
 pub struct SecretScalar(pub SecretScalarBuffer);
 
 // TODO: better name for this. is there an official one?
 // maybe `NonceSalt`?
 pub const SECRET_EXTRA_BYTES: usize = 32;
-type SecretExtraBuffer = [u8; SECRET_EXTRA_BYTES];
+pub type SecretExtraBuffer = [u8; SECRET_EXTRA_BYTES];
 #[derive(Clone,Debug,Default)]
 pub struct SecretExtra(pub SecretExtraBuffer);
 
 pub const PUBLIC_KEY_BYTES: usize = 32;
-type PublicKeyBuffer = [u8; PUBLIC_KEY_BYTES];
-#[derive(Clone,Debug,Default)]
+pub type PublicKeyBuffer = [u8; PUBLIC_KEY_BYTES];
+#[derive(Clone,Debug,Default,PartialEq)]
 pub struct PublicKey(pub PublicKeyBuffer);
 
 // pub const SECRET_KEY_BYTES: usize = 64;
@@ -34,9 +34,13 @@ pub struct PublicKey(pub PublicKeyBuffer);
 
 #[derive(Clone,Debug,Default)]
 pub struct SecretKey {
+    /// input entropy
     pub seed: Seed,
+    /// left half of hash of seed, with some bit-fiddling
     pub secret_scalar: SecretScalar,
+    /// right half of hash of seed, for the nonces
     pub secret_extra: SecretExtra,
+    /// packed version of secret scalar multiple of base point
     pub public_key: PublicKey,
 }
 
@@ -77,3 +81,48 @@ pub fn generate_key(seed: &Seed) -> SecretKey {
         public_key: PublicKey(public_key),
     }
 }
+
+type Signature = ([u8; 32], [u8; 32]);
+
+pub fn sign(secret_key: &SecretKey, message: &[u8]) -> Signature {
+
+    // UFF! So close...
+    // But: by definition, arrays have length known at compile time.
+    // Our messages don't.
+    //
+    // To avoid weird allocations, need to modify sha512 interface instead,
+    // so we can hash our concatenated bytes step by step.
+
+    let mut hash = crate::hash::Hash::new();
+    hash.update(&secret_key.secret_extra.0);
+    hash.update(message);
+    let r = crate::curve::modulo_group_order_u8s(&mut hash.finalize());
+    #[allow(non_snake_case)]
+    let point_R = crate::curve::scalar_multiple_of_base_point(&r);
+    #[allow(non_snake_case)]
+    let R: [u8; 32]  = crate::curve::pack_point(&point_R);
+
+    let mut hash = crate::hash::Hash::new();
+    hash.update(&R);
+    hash.update(&secret_key.public_key.0);
+    hash.update(message);
+    let h = crate::curve::modulo_group_order_u8s(&mut hash.finalize());
+    // calculate S = r + H(R,A,M) mod \ell, with h = H(R,A,M)
+    let mut x: [i64; 64] = [0; 64];
+    for i in 0..32 {
+        x[i] = r[i] as _;
+    }
+    for i in 0..32 {
+        for j in 0..32 {
+            x[i + j] += h[i] as i64 * secret_key.secret_scalar.0[j] as i64;
+        }
+    }
+    #[allow(non_snake_case)]
+    let S: [u8; 32] = crate::curve::modulo_group_order(&mut x);
+
+    (R, S)
+}
+
+// pub fn verify(public_key: &PublicKey, message: &[u8], signature: &Signature) -> bool {
+//     unimplemented!();
+// }

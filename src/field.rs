@@ -1,7 +1,8 @@
-/// the non-optimized arithmetic of the base field
-/// of Curve25519, Z/lZ where l = 2^255 - 19
-///
-/// this is what we will replace with Haase's assembly code in v0.3.0
+//!
+//! the non-optimized arithmetic of the base field
+//! of Curve25519, Z/lZ where l = 2^255 - 19
+//!
+//! this is what we will replace with Haase's assembly code in v0.3.0
 
 type FieldElementBuffer = [i64; 16];  // or `FieldElementAsLimbs`?
 
@@ -55,10 +56,12 @@ pub static Y: FieldElement = FieldElement([
 // }
 
 use core::ops::Add;
+/// Aha addition!
 impl<'a, 'b> Add<&'b FieldElement> for &'a FieldElement {
     type Output = FieldElement;
 
     // TODO: TweetNaCl doesn't do any reduction here, why not?
+    /// Addition of field elements
     fn add(self, other: &'b FieldElement) -> FieldElement {
         let mut sum: FieldElementBuffer = Default::default();
         for (s, (x, y)) in sum.iter_mut().zip(self.0.iter().zip(other.0.iter())) {
@@ -73,6 +76,7 @@ impl<'a, 'b> Sub<&'b FieldElement> for &'a FieldElement {
     type Output = FieldElement;
 
     // TODO: TweetNaCl doesn't do any reduction here, why not?
+    /// Subtraction of field elements
     fn sub(self, other: &'b FieldElement) -> FieldElement {
         let mut sum: FieldElementBuffer = Default::default();
         for (s, (x, y)) in sum.iter_mut().zip(self.0.iter().zip(other.0.iter())) {
@@ -105,7 +109,7 @@ fn reduce(fe: &mut FieldElement) {
         // --> o[i + 1] += c - 1  // add carry bit, subtract
         // b) i == 15: wraps around to index 0 via 2^256 = 38
         // --> o[0] += 38 * (c - 1)
-        fe.0[(i + 1) * ((i < 16) as usize)] +=
+        fe.0[(i + 1) * ((i < 15) as usize)] +=
             carry - 1 + 37 * (carry - 1) * ((i == 15) as i64);
         // get rid of carry bit
         // TODO: why not get rid of it immediately. kinda clearer
@@ -179,6 +183,7 @@ fn square(fe: &FieldElement) -> FieldElement {
 //     fe * fe
 // }
 
+/// inversion as field element, building block of `core::ops::Div` trait impl
 pub fn invert(fe: &FieldElement) -> FieldElement {
     // TODO: possibly assert! that fe != 0?
 
@@ -206,6 +211,7 @@ impl<'a, 'b> Div<&'b FieldElement> for &'a FieldElement {
     }
 }
 
+/// constant-time swap of field elements
 pub fn conditional_swap(p: &mut FieldElement, q: &mut FieldElement, b: i64) {
     // TODO: change signature to `b: bool`?
     //
@@ -287,7 +293,7 @@ pub fn freeze_to_le_bytes(fe: &FieldElement) -> [u8; 32] {
     bytes
 }
 
-// parity of integer modulo 2**255 - 19
+/// parity of integer modulo 2**255 - 19
 pub fn parity(a: &FieldElement) -> u8 {
     let d = freeze_to_le_bytes(a);
     d[0] & 1

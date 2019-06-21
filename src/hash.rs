@@ -4,6 +4,8 @@ use core::num::Wrapping;
 pub const SHA256_BYTES: usize = 64;
 pub const SHA512_BYTES: usize = 64;
 
+pub type Digest = [u8; SHA512_BYTES];
+
 #[allow(non_snake_case)]
 // this is `rotate-right(x, n)` for 64-bit words
 // implicitly, 0 <= n < 64
@@ -190,4 +192,92 @@ pub fn sha512(digest: &mut [u8; 64], msg: &[u8]) {
     hash_blocks(digest, padding);
 
     // digest.copy_from_slice(&h);
+}
+
+
+pub struct Hash {
+    digest: Digest,
+    buffer: [u8; 128],
+    unprocessed: usize,
+    data_length: usize,
+}
+
+impl Hash {
+    pub fn new() -> Hash {
+        let mut digest: Digest = [0; 64];
+        digest.copy_from_slice(&IV);
+        Hash {
+            digest: digest,
+            buffer: [0; 128],
+            unprocessed: 0,
+            data_length: 0,
+        }
+    }
+
+    pub fn update(&mut self, data: &[u8]) {
+        self.data_length += data.len();
+
+        if self.unprocessed + data.len() < 128 {
+            self.buffer[self.unprocessed..self.unprocessed + data.len()]
+                .copy_from_slice(&data);
+            self.unprocessed += data.len();
+        } else {
+            // fill up buffer
+            let filler = 128 - self.unprocessed;
+            self.buffer[self.unprocessed..]
+                .copy_from_slice(&data[..filler]);
+            hash_blocks(&mut self.digest, &self.buffer);
+
+            self.unprocessed = hash_blocks(&mut self.digest, &data[filler..]);
+            self.buffer[..self.unprocessed]
+                .copy_from_slice(&data[data.len() - self.unprocessed..]);
+        }
+    }
+
+    //
+    // NOT WORKING
+    //
+    // pub fn new_update(&mut self, data: &[u8]) {
+    //     self.data_length += data.len();
+
+    //     let mut data_ref = data;
+    //     if self.unprocessed + data.len() >= 128 {
+    //         let filler = 128 - self.unprocessed;
+    //         self.buffer[self.unprocessed..]
+    //             .copy_from_slice(&data[..filler]);
+    //         hash_blocks(&mut self.digest, &self.buffer);
+    //         data_ref = &data[filler..];
+    //     }
+    //     if data_ref.len() >= 128 {
+    //         self.unprocessed = hash_blocks(&mut self.digest, &data_ref);
+    //     } else {
+    //         self.unprocessed = data_ref.len();
+    //     }
+    //     self.buffer[..self.unprocessed]
+    //         .copy_from_slice(&data_ref[data_ref.len() - self.unprocessed..]);
+    // }
+
+    pub fn finalize(mut self) -> Digest {
+        // generate padding (can be 1 or 2 blocks of 128 bytes)
+        let mut padding: [u8; 256] = [0u8; 256];
+        let padding_length = match self.unprocessed < 112 {
+            true => 128,
+            false => 256,
+        };
+        // first: remaining message
+        padding[..self.unprocessed].copy_from_slice(&self.buffer[..self.unprocessed]);
+        // then: bit 1 followed by zero bits until...
+        padding[self.unprocessed] = 128;
+        // ...message length in bits (NB: l is in bytes)
+        padding[padding_length - 9] = (self.data_length >> 61) as u8;
+        BigEndian::write_u64(
+            &mut padding[padding_length - 8..],
+            (self.data_length << 3) as u64,
+        );
+
+        let padding = &padding[..padding_length];
+        hash_blocks(&mut self.digest, padding);
+
+        self.digest
+    }
 }

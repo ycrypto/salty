@@ -1,7 +1,11 @@
+// TODO: decide whether to move this to `crate::curve::edwards`
+
 use crate::field::{FieldElement, D2};
 // TODO: use struct with names X,Y,Z,T here?
 type CurveCoordinates = [FieldElement; 4];
 
+/// Since elliptic curve points are an abelian group,
+/// we have a bunch of associated operations :)
 #[derive(Clone,Debug)]
 pub struct CurvePoint(CurveCoordinates);
 
@@ -23,9 +27,10 @@ impl<'a, 'b> Add<&'b CurvePoint> for &'a CurvePoint {
         let p = &self.0;
         let q = &other.0;
 
-        let a = &p[1] - &p[0];
-        let t = &q[1] - &q[0];
-        let a = a * &t;        // A <- (Y1 - X1)(Y2 - X2)
+        // let a = &p[1] - &p[0];
+        // let t = &q[1] - &q[0];
+        // let a = a * &t;        // A <- (Y1 - X1)(Y2 - X2)
+        let a = &(&p[1] - &p[0]) * &(&q[1] - &q[0]);
 
         let b = &p[0] + &p[1];
         let t = &q[0] + &q[1];
@@ -71,6 +76,8 @@ pub fn pack_point(p: &CurvePoint) -> PackedPoint {
 }
 
 fn scalar_multiple_of_point(scalar: &[u8; 32], q: &CurvePoint) -> CurvePoint {
+    // "scalar" bytes are interpreted as little-endian integer
+    // TODO: use a proper type
     let mut p = CurvePoint([
         crate::field::ZERO.clone(),
         crate::field::ONE.clone(),
@@ -102,4 +109,62 @@ pub fn scalar_multiple_of_base_point(scalar: &[u8; 32]) -> CurvePoint {
     ]);
 
     scalar_multiple_of_point(scalar, &base)
+}
+
+// TODO: move to `scalar` submodule?
+pub static L: [u64; 32] = [
+    0xed, 0xd3, 0xf5, 0x5c, 0x1a, 0x63, 0x12, 0x58,
+    0xd6, 0x9c, 0xf7, 0xa2, 0xde, 0xf9, 0xde, 0x14,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0x10,
+];
+
+// called `modL` in TweetNaCl
+pub fn modulo_group_order(x: &mut [i64; 64]) -> [u8; 32] {
+    for i in (32..=63).rev() {
+        let mut carry: i64 = 0;
+        for j in (i - 32)..(i - 12) {
+            // x[j] += carry - 16 * x[i] * L[j - (i - 32)];
+            // C code doesn't care about u64 vs i64...
+            x[j] += carry - 16 * x[i] * L[j - (i - 32)] as i64;
+            carry = (x[j] + 128) >> 8;
+            x[j] -= carry << 8;
+        }
+        // x[j] += carry;  // C code uses out-of-scope variable j
+        x[i - 12] += carry;
+        x[i] = 0;
+    }
+
+    let mut carry: i64 = 0;
+    for j in 0..32 {
+        // x[j] += carry - (x[31] >> 4) * L[j];
+        x[j] += carry - (x[31] >> 4) * L[j] as i64;
+        carry = x[j] >> 8;
+        x[j] &= 0xff;
+    }
+
+    for j in 0..32 {
+        // x[j] -= carry * L[j];
+        x[j] -= carry * L[j] as i64;
+    }
+
+    let mut r: [u8; 32] = Default::default();
+    for i in 0 ..32 {
+        x[i + 1] += x[i] >> 8;
+        // r[i] = x[i] & 0xff;
+        r[i] = ((x[i] as u64) & 0xff) as u8;
+    }
+
+    r
+
+}
+
+// TODO: clean this up obvsly
+pub fn modulo_group_order_u8s(x: &[u8; 64]) -> [u8; 32] {
+    let mut x64: [i64; 64] = [0; 64];//Default::default();
+    for i in 0..64 {
+        x64[i] = x[i] as i64;
+    }
+
+    modulo_group_order(&mut x64)
 }
