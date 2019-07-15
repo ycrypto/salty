@@ -185,7 +185,9 @@ pub fn sha512(digest: &mut [u8; 64], msg: &[u8]) {
     // then: bit 1 followed by zero bits until...
     padding[unprocessed] = 128;
     // ...message length in bits (NB: l is in bytes)
-    padding[padding_length - 9] = (l >> 61) as u8;
+    #[cfg(target_pointer_width = "64")] {
+        padding[padding_length - 9] = (l >> 61) as u8;
+    }
     BigEndian::write_u64(&mut padding[padding_length - 8..], (l << 3) as u64);
 
     let padding = &padding[..padding_length];
@@ -269,7 +271,9 @@ impl Hash {
         // then: bit 1 followed by zero bits until...
         padding[self.unprocessed] = 128;
         // ...message length in bits (NB: l is in bytes)
-        padding[padding_length - 9] = (self.data_length >> 61) as u8;
+        #[cfg(target_pointer_width = "64")] {
+            padding[padding_length - 9] = (self.data_length >> 61) as u8;
+        }
         BigEndian::write_u64(
             &mut padding[padding_length - 8..],
             (self.data_length << 3) as u64,

@@ -1,5 +1,9 @@
 #ifndef TWEETNACL_H
 #define TWEETNACL_H
+
+// the missing comments:
+// https://cryptojedi.org/papers/tweetnacl-20140917.pdf
+
 #define crypto_auth_PRIMITIVE "hmacsha512256"
 #define crypto_auth crypto_auth_hmacsha512256
 #define crypto_auth_verify crypto_auth_hmacsha512256_verify

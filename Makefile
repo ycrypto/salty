@@ -1,7 +1,8 @@
 TARGET ?= thumbv7em-none-eabihf
 
 build build-release:
-	cargo build --release
+	cargo build --release # --target x86_64-unknown-linux-gnu
+	cargo build --release --target thumbv7em-none-eabihf
 
 build-debug:
 	cargo build

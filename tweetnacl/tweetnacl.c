@@ -1,4 +1,8 @@
 #include "tweetnacl.h"
+
+// the missing comments:
+// https://cryptojedi.org/papers/tweetnacl-20140917.pdf
+
 #define FOR(i,n) for (i = 0;i < n;++i)
 #define sv static void
 
@@ -6,6 +10,9 @@ typedef unsigned char u8;
 typedef unsigned long u32;
 typedef unsigned long long u64;
 typedef long long i64;
+// TODO: still not sure why i64, seems pretty wasteful
+// Each entry is in radix 2^16
+// Encoding is little-endian
 typedef i64 gf[16];
 extern void randombytes(u8 *,u64);
 
@@ -26,6 +33,7 @@ static u32 L32(u32 x,int c) { return (x << c) | ((x&0xffffffff) >> (32 - c)); }
 
 static u32 ld32(const u8 *x)
 {
+  // ldX = load little-endian X-bit integer
   u32 u = x[3];
   u = (u<<8)|x[2];
   u = (u<<8)|x[1];
@@ -34,6 +42,7 @@ static u32 ld32(const u8 *x)
 
 static u64 dl64(const u8 *x)
 {
+  // dlX = load big-endian X-bit integer
   u64 i,u=0;
   FOR(i,8) u=(u<<8)|x[i];
   return u;
@@ -41,12 +50,14 @@ static u64 dl64(const u8 *x)
 
 sv st32(u8 *x,u32 u)
 {
+  // stX = store little-endian X-bit integer
   int i;
   FOR(i,4) { x[i] = u; u >>= 8; }
 }
 
 sv ts64(u8 *x,u64 u)
 {
+  // tsX = store big-endian X-bit integer
   int i;
   for (i = 7;i >= 0;--i) { x[i] = u; u >>= 8; }
 }
@@ -275,15 +286,32 @@ sv car25519(gf o)
   int i;
   i64 c;
   FOR(i,16) {
+    // add 2^16
     o[i]+=(1LL<<16);
+    // carry "bit" (it's actually everything over the radix 2^16
     c=o[i]>>16;
+    // a) i < 15: add carry bit, subtract 1 to compensate addition of 2^16
+    // --> o[i + 1] += c - 1  // add carry bit, subtract
+    // b) i == 15: wraps around to index 0 via 2^256 = 38
+    // --> o[0] += 38 * (c - 1)
     o[(i+1)*(i<15)]+=c-1+37*(c-1)*(i==15);
+    // get rid of carry bit
+    // TODO: why not get rid of it immediately. kinda clearer
     o[i]-=c<<16;
   }
 }
 
 sv sel25519(gf p,gf q,int b)
 {
+  // swap p and q iff b == 1
+  //
+  // a) b = 0
+  // --> c = 0, t = 0, p and q remain as they were
+  //
+  // b) b = 1
+  // --> c = 0xFFFFFFFF, t = p[i]^q[i],
+  // so p[i] <- p[i]^p[i]^q[i] = q[i] and similarly
+  // q[i] <-- p[i], so they swap
   i64 t,i,c=~(b-1);
   FOR(i,16) {
     t= c&(p[i]^q[i]);
@@ -297,9 +325,11 @@ sv pack25519(u8 *o,const gf n)
   int i,j,b;
   gf m,t;
   FOR(i,16) t[i]=n[i];
+  // three times' the charm, huh?`
   car25519(t);
   car25519(t);
   car25519(t);
+  //
   FOR(j,2) {
     m[0]=t[0]-0xffed;
     for(i=1;i<15;i++) {
@@ -319,6 +349,7 @@ sv pack25519(u8 *o,const gf n)
 
 static int neq25519(const gf a, const gf b)
 {
+  // put a, b in canonical representation, compare that
   u8 c[32],d[32];
   pack25519(c,a);
   pack25519(d,b);
@@ -327,6 +358,7 @@ static int neq25519(const gf a, const gf b)
 
 static u8 par25519(const gf a)
 {
+  // par for parity?
   u8 d[32];
   pack25519(d,a);
   return d[0]&1;
@@ -353,11 +385,18 @@ sv Z(gf o,const gf a,const gf b)
 
 sv M(gf o,const gf a,const gf b)
 {
+  // NB: t is [i64; 31], while gf is typedefed to i64[16]
   i64 i,j,t[31];
+  // so-called schoolbook multiplication
   FOR(i,31) t[i]=0;
   FOR(i,16) FOR(j,16) t[i+j]+=a[i]*b[j];
+  // reduction modulo 2^256 - 38
+  // TODO: why?? why not 2^255-19?
+  // preliminary answer: 2 is invertible; 2^256 is a simple bitshift
   FOR(i,15) t[i]+=38*t[i+16];
   FOR(i,16) o[i]=t[i];
+  // normalize such that all limbs lie in [0, 2^16)
+  // TODO: why twice? why is twice enough?
   car25519(o);
   car25519(o);
 }
@@ -369,9 +408,12 @@ sv S(gf o,const gf a)
 
 sv inv25519(gf o,const gf i)
 {
+ // want: o = 1/i in base field
   gf c;
   int a;
   FOR(a,16) c[a]=i[a];
+  // exponentiate with 2^255 - 21
+  // same as inversion by Fermat's little theorem
   for(a=253;a>=0;a--) {
     S(c,c);
     if(a!=2&&a!=4) M(c,c,i);
@@ -380,6 +422,10 @@ sv inv25519(gf o,const gf i)
 }
 
 sv pow2523(gf o,const gf i)
+// the naming here means "to the power of 2^252 - 3
+// again by Fermat's little theorem, this is the same
+// as taking the square root, which is needed for
+// point decompression
 {
   gf c;
   int a;
@@ -393,6 +439,7 @@ sv pow2523(gf o,const gf i)
 
 int crypto_scalarmult(u8 *q,const u8 *n,const u8 *p)
 {
+  // this is on Montgomery curve
   u8 z[32];
   i64 x[80],r,i;
   gf a,b,c,d,e,f;
@@ -587,27 +634,38 @@ int crypto_hash(u8 *out,const u8 *m,u64 n)
 
 sv add(gf p[4],gf q[4])
 {
+  // this is the direct application of the complete addition
+  // law for our twisted Edwards curve, for any pair of points,
+  // given in extended coordinates (https://eprint.iacr.org/2008/522)
+
   gf a,b,c,d,t,e,f,g,h;
+
+  // given p = (x1:y1:z1:t1) and p = (x2:y2:z2:t2),
+  // we have p + q = (x3:y3:z3:t3) with
+  // 8M (field multiplications), and
+  // 1D (multiplication with curve constant)
+  //
+  // (cf. end of section 3.1)
 
   Z(a, p[1], p[0]);
   Z(t, q[1], q[0]);
-  M(a, a, t);
+  M(a, a, t);        // A <- (Y1 - X1)(Y2 - X2)
   A(b, p[0], p[1]);
   A(t, q[0], q[1]);
-  M(b, b, t);
+  M(b, b, t);        // B <- (Y1 + X1)*(Y2 + X2)
   M(c, p[3], q[3]);
-  M(c, c, D2);
+  M(c, c, D2);       // C <- k*T1*T2  with k = 2d' =
   M(d, p[2], q[2]);
-  A(d, d, d);
-  Z(e, b, a);
-  Z(f, d, c);
-  A(g, d, c);
-  A(h, b, a);
+  A(d, d, d);        // D <- 2Z1*Z2
+  Z(e, b, a);        // E <- B - A
+  Z(f, d, c);        // F <- D - C
+  A(g, d, c);        // G <- D + C
+  A(h, b, a);        // H <- B + A
 
-  M(p[0], e, f);
-  M(p[1], h, g);
-  M(p[2], g, f);
-  M(p[3], e, h);
+  M(p[0], e, f); // X3 <- E * F
+  M(p[1], h, g); // Y3 <- G * H
+  M(p[2], g, f); // Z3 <- F * G
+  M(p[3], e, h); // T3 <- E * H
 }
 
 sv cswap(gf p[4],gf q[4],u8 b)
@@ -629,13 +687,26 @@ sv pack(u8 *r,gf p[4])
 
 sv scalarmult(gf p[4],gf q[4],const u8 *s)
 {
+  // this is scalar multiplication p <- s * q for Ed25519
+  //
+  // curve points in extended coordinates as
+  // decribed in https://eprint.iacr.org/2008/522
+  // in order (X:Y:Z:T)
+  //
+  // NB: q gets modified too
+
   int i;
-  set25519(p[0],gf0);
-  set25519(p[1],gf1);
+  set25519(p[0],gf0);  // gf0 = 0 in base field
+  set25519(p[1],gf1);  // gf1 = 1 in base field
   set25519(p[2],gf1);
-  set25519(p[3],gf0);
+  set25519(p[3],gf0); //... so this is point (0, 1, 1, 0), the neutral element
   for (i = 255;i >= 0;--i) {
+    // extract scalar bit
     u8 b = (s[i/8]>>(i&7))&1;
+    // a) bit = 0
+    // --> q = q + p, p <- 2*p, net effect: q and p remain the same
+    // b) bit = 1
+    // --> p += q, q += q,... UMMM??!
     cswap(p,q,b);
     add(q,p);
     add(p,p);
@@ -645,11 +716,16 @@ sv scalarmult(gf p[4],gf q[4],const u8 *s)
 
 sv scalarbase(gf p[4],const u8 *s)
 {
+  // this is scalar multiplication p <- s * b for Ed25519,
+  // where b is the base point
+
   gf q[4];
+  // put base point in q
   set25519(q[0],X);
   set25519(q[1],Y);
   set25519(q[2],gf1);
   M(q[3],X,Y);
+  // put the s-multiple in p
   scalarmult(p,q,s);
 }
 
@@ -702,6 +778,7 @@ sv modL(u8 *r,i64 x[64])
 
 sv reduce(u8 *r)
 {
+  // this reduces r "modulo L", the order of the group (as Z-module)
   i64 x[64],i;
   FOR(i,64) x[i] = (u64) r[i];
   FOR(i,64) r[i] = 0;
@@ -714,23 +791,32 @@ int crypto_sign(u8 *sm,u64 *smlen,const u8 *m,u64 n,const u8 *sk)
   i64 i,j,x[64];
   gf p[4];
 
+  // this time, will use both lower 32 bytes
+  // and upper 32 bytes in `d`, the digest sha512(sk)
   crypto_hash(d, sk, 32);
   d[0] &= 248;
   d[31] &= 127;
   d[31] |= 64;
 
+  // sm, the "signed message", is (signature, message)
   *smlen = n+64;
+  // copy message to end of signed message
   FOR(i,n) sm[64 + i] = m[i];
+  // copy "right half" of digest to sm[32:64] (WHY?)
   FOR(i,32) sm[32 + i] = d[32 + i];
 
+  // here's the answer: want sha512(right-half, message)
   crypto_hash(r, sm+32, n+32);
-  reduce(r);
+  reduce(r); // modulo group order
   scalarbase(p,r);
+  // first 32 bytes of signed message are packed version
+  // of R, the r-multiple of the base point
   pack(sm,p);
 
+  // next, want sha512(R,A,M), where A is the packed public key
   FOR(i,32) sm[i+32] = sk[i+32];
   crypto_hash(h,sm,n + 64);
-  reduce(h);
+  reduce(h); // modulo group order
 
   FOR(i,64) x[i] = 0;
   FOR(i,32) x[i] = (u64) r[i];
@@ -742,6 +828,7 @@ int crypto_sign(u8 *sm,u64 *smlen,const u8 *m,u64 n,const u8 *sk)
 
 static int unpackneg(gf r[4],const u8 p[32])
 {
+  // "load curve point"
   gf t, chk, num, den, den2, den4, den6;
   set25519(r[2],gf1);
   unpack25519(r[1],p);
