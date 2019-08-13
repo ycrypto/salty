@@ -9,7 +9,7 @@
 // #[!cfg(feature = "cortex-m4")]
 // pub mod field_tweetnacl as field;
 pub mod field;
-pub mod field_haase;
+// pub mod field_haase;
 /// The twisted Edwards curve
 pub mod curve;
 /// SHA-512
@@ -17,7 +17,7 @@ pub mod hash;
 /// Ed25519 signatures
 pub mod sign;
 
-pub mod field_common;
+// pub mod field_common;
 
 #[cfg(test)]
 mod tests;

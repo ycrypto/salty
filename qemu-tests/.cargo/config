@@ -1,0 +1,11 @@
+[build]
+target = "thumbv8m.main-none-eabi"
+
+[target.thumbv8m.main-none-eabi]
+# runner = "gdb-multiarch -q -x jlink.gdb"
+runner = "../../qemu/arm-softmmu/qemu-system-arm -cpu cortex-m33 -machine musca-b1 -nographic -semihosting-config enable=on,target=native -s -kernel"
+
+rustflags = [
+  "-C", "link-arg=-Tlink.x",
+]
+
