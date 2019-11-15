@@ -1,0 +1,14 @@
+pub const SHA256_BYTES: usize = 64;
+pub const SHA512_BYTES: usize = 64;
+
+pub const SCALAR_LENGTH: usize = 32;
+
+pub const SECRETKEY_LENGTH: usize = 32;
+pub const PUBLICKEY_LENGTH: usize = 32;
+pub const KEYPAIR_LENGTH: usize = SECRETKEY_LENGTH + PUBLICKEY_LENGTH;
+
+pub const SIGNATURE_LENGTH: usize = 64;
+
+pub const EXPANDED_SECRETKEY_KEY_LENGTH: usize = 32;
+pub const EXPANDED_SECRETKEY_NONCE_LENGTH: usize = 32;
+pub const EXPANDED_SECRETKEY_LENGTH: usize = EXPANDED_SECRETKEY_KEY_LENGTH + EXPANDED_SECRETKEY_NONCE_LENGTH;

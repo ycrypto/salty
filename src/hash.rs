@@ -1,8 +1,10 @@
 use byteorder::{BigEndian, ByteOrder};
 use core::num::Wrapping;
 
-pub const SHA256_BYTES: usize = 64;
-pub const SHA512_BYTES: usize = 64;
+use crate::constants::{
+    // SHA256_BYTES,
+    SHA512_BYTES,
+};
 
 pub type Digest = [u8; SHA512_BYTES];
 
@@ -206,7 +208,7 @@ pub struct Hash {
 
 impl Hash {
     pub fn new() -> Hash {
-        let mut digest: Digest = [0; 64];
+        let mut digest: Digest = [0; SHA512_BYTES];
         digest.copy_from_slice(&IV);
         Hash {
             digest: digest,

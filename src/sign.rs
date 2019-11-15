@@ -123,6 +123,29 @@ pub fn sign(secret_key: &SecretKey, message: &[u8]) -> Signature {
     (R, S)
 }
 
+// ed25519-dalek:
+//         let mut h: Sha512 = Sha512::new();
+//         let R: CompressedEdwardsY;
+//         let r: Scalar;
+//         let s: Scalar;
+//         let k: Scalar;
+
+//         h.input(&self.nonce);
+//         h.input(&message);
+
+//         r = Scalar::from_hash(h);
+//         R = (&r * &constants::ED25519_BASEPOINT_TABLE).compress();
+
+//         h = Sha512::new();
+//         h.input(R.as_bytes());
+//         h.input(public_key.as_bytes());
+//         h.input(&message);
+
+//         k = Scalar::from_hash(h);
+//         s = &(&k * &self.key) + &r;
+
+//         Signature { R, s }
+
 // pub fn verify(public_key: &PublicKey, message: &[u8], signature: &Signature) -> bool {
 //     unimplemented!();
 // }
