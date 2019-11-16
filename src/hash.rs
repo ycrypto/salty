@@ -240,6 +240,11 @@ impl Hash {
         }
     }
 
+    pub fn updated(mut self, data: &[u8]) -> Self {
+        self.update(data);
+        self
+    }
+
     //
     // NOT WORKING
     //

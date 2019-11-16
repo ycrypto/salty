@@ -5,6 +5,8 @@ use crate::{
         SECRETKEY_NONCE_LENGTH,
 
         // PUBLICKEY_LENGTH,
+
+        SHA512_LENGTH,
     },
     curve::{
         CurvePoint,
@@ -44,22 +46,68 @@ impl Keypair {
     pub fn sign(&self, message: &[u8]) -> Signature {
 
         // R = rB, with r = H(nonce, M)
-        let mut first_hash = Sha512::new();
-        first_hash.update(&self.secret.nonce);
-        first_hash.update(message);
+        let first_hash = Sha512::new()
+            .updated(&self.secret.nonce)
+            .updated(message)
+            .finalize();
 
-        let r: Scalar = Scalar::from_u512_le(&first_hash.finalize());
+        let r: Scalar = Scalar::from_u512_le(&first_hash);
         #[allow(non_snake_case)]
         let R: CompressedY = (&r * &CurvePoint::basepoint()).compressed();
 
 
         // S = r + H(R, A, M)s (mod l), with A = sB the public key
-        let mut second_hash = Sha512::new();
-        second_hash.update(&R.0);
-        second_hash.update(&self.public.compressed.0);
-        second_hash.update(message);
+        let second_hash = Sha512::new()
+            .updated(&R.0)
+            .updated(&self.public.compressed.0)
+            .updated(message)
+            .finalize();
 
-        let h: Scalar = Scalar::from_u512_le(&second_hash.finalize());
+        let h: Scalar = Scalar::from_u512_le(&second_hash);
+        let mut s = &r.into() + &(&h.into() * &TweetNaclScalar::from(&self.secret.scalar));
+        let s = s.reduce_modulo_ell();
+
+        Signature { r: R, s }
+    }
+
+    pub fn sign_prehashed(&self, prehashed_message: &[u8; SHA512_LENGTH], context: Option<&'static [u8]>)
+    -> Signature {
+        // By default, the context is an empty string.
+        let context: &[u8] = context.unwrap_or(b"");
+        debug_assert!(context.len() <= 255, "The context must not be longer than 255 octets.");
+
+        let first_hash = Sha512::new()
+            // Ed25519ph parts
+            .updated(b"SigEd25519 no Ed25519 collisions")
+            .updated(&[1])
+            // context parts
+            .updated(&[context.len() as u8])
+            .updated(context)
+            // usual parts
+            .updated(&self.secret.nonce)
+            .updated(prehashed_message)
+            .finalize();
+
+        // from here on, same as normal signing
+        let r: Scalar = Scalar::from_u512_le(&first_hash);
+        #[allow(non_snake_case)]
+        let R: CompressedY = (&r * &CurvePoint::basepoint()).compressed();
+
+
+        let second_hash = Sha512::new()
+            // Ed25519ph parts
+            .updated(b"SigEd25519 no Ed25519 collisions")
+            .updated(&[1])
+            // context parts
+            .updated(&[context.len() as u8])
+            .updated(context)
+            // usual parts
+            .updated(&R.0)
+            .updated(&self.public.compressed.0)
+            .updated(prehashed_message)
+            .finalize();
+
+        let h: Scalar = Scalar::from_u512_le(&second_hash);
         let mut s = &r.into() + &(&h.into() * &TweetNaclScalar::from(&self.secret.scalar));
         let s = s.reduce_modulo_ell();
 
@@ -115,6 +163,7 @@ impl From<&[u8; SECRETKEY_SEED_LENGTH]> for Keypair {
 mod tests {
 
     use super::Keypair;
+    use crate::hash::Hash as Sha512;
 
     #[test]
     fn test_signature() {
@@ -150,6 +199,41 @@ mod tests {
 
         assert_eq!(signature.r.0, R_expected);
         assert_eq!(signature.s.0, S_expected);
+    }
+
+    #[test]
+    fn test_ed25519ph_with_rf8032_test_vector() {
+        let seed: [u8; 32] = [
+            0x83, 0x3f, 0xe6, 0x24, 0x09, 0x23, 0x7b, 0x9d,
+            0x62, 0xec, 0x77, 0x58, 0x75, 0x20, 0x91, 0x1e,
+            0x9a, 0x75, 0x9c, 0xec, 0x1d, 0x19, 0x75, 0x5b,
+            0x7d, 0xa9, 0x01, 0xb9, 0x6d, 0xca, 0x3d, 0x42,
+        ];
+
+        let keypair = Keypair::from(&seed);
+
+        let message: [u8; 3] = [0x61, 0x62, 0x63];
+
+        let prehashed_message = Sha512::new().updated(&message).finalize();
+
+        let signature = keypair.sign_prehashed(&prehashed_message, None);
+
+        let expected_r = [
+            0x98, 0xa7, 0x02, 0x22, 0xf0, 0xb8, 0x12, 0x1a,
+            0xa9, 0xd3, 0x0f, 0x81, 0x3d, 0x68, 0x3f, 0x80,
+            0x9e, 0x46, 0x2b, 0x46, 0x9c, 0x7f, 0xf8, 0x76,
+            0x39, 0x49, 0x9b, 0xb9, 0x4e, 0x6d, 0xae, 0x41,
+        ];
+
+        let expected_s = [
+            0x31, 0xf8, 0x50, 0x42, 0x46, 0x3c, 0x2a, 0x35,
+            0x5a, 0x20, 0x03, 0xd0, 0x62, 0xad, 0xf5, 0xaa,
+            0xa1, 0x0b, 0x8c, 0x61, 0xe6, 0x36, 0x06, 0x2a,
+            0xaa, 0xd1, 0x1c, 0x2a, 0x26, 0x08, 0x34, 0x06,
+        ];
+
+        assert_eq!(signature.r.0, expected_r);
+        assert_eq!(signature.s.0, expected_s);
     }
 }
 

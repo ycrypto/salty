@@ -180,11 +180,11 @@ impl Scalar {
         Scalar(bytes.clone())
     }
 
-    pub fn from_u256_le(x: &[u8; 32]) -> Scalar {
+    pub fn from_u256_le(x: &U256le) -> Scalar {
         TweetNaclScalar::from(&Scalar(*x)).reduce_modulo_ell()
     }
 
-    pub fn from_u512_le(x: &[u8; 64]) -> Scalar {
+    pub fn from_u512_le(x: &U512le) -> Scalar {
         TweetNaclScalar::from(x).reduce_modulo_ell()
     }
 }
