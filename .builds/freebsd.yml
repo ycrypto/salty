@@ -1,0 +1,19 @@
+image: freebsd/latest
+packages:
+- arm-none-eabi-gcc
+sources:
+- https://github.com/nickray/salty
+shell: false
+tasks:
+- setup: |
+    curl -sSf https://sh.rustup.rs | sh -s -- -y -q
+    source $HOME/.cargo/env
+    rustup target add thumbv7em-none-eabihf
+- build: |
+    cd salty
+    source $HOME/.cargo/env
+    cargo build --target thumbv7em-none-eabihf --release
+- test: |
+    cd salty
+    source $HOME/.cargo/env
+    cargo test --release
