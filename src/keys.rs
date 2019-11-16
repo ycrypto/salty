@@ -235,7 +235,7 @@ impl From<&[u8; SECRETKEY_SEED_LENGTH]> for Keypair {
 mod tests {
 
     use super::Keypair;
-    use crate::hash::Hash as Sha512;
+    use crate::hash::Sha512;
 
     #[test]
     fn test_signature() {

@@ -18,7 +18,7 @@
 //! For keypairs, an external trusted source of entropy is assumed, letting
 //! us construct a keypair as:
 //!
-//! ```rust
+//! ```ignore
 //! let seed: [u8; 32] = <some entropic input>;
 //! let keypair: salty::Keypair = salty::Keypair::from(&seed);
 //! ```
@@ -26,14 +26,14 @@
 //! Any byte slice that fits in memory can then be signed (without new
 //! entropic input) deterministically via
 //!
-//! ```rust
+//! ```ignore
 //! let data: &[u8] = <some data>;
 //! let signature: salty::Signature = keypair.sign(data);
 //! ```
 //!
 //! Thereafter, the signature can be checked:
 //!
-//! ```rust
+//! ```ignore
 //! let public_key = &keypair.pubic;
 //! assert!(public_key.verify(data, &signature).is_ok());
 //! ```
