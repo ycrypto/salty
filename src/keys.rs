@@ -1,51 +1,162 @@
-pub struct SecretKey(
-    pub (crate) [u8; SECRET_KEY_LENGTH]
-);
+use crate::{
+    constants::{
+        SECRETKEY_SEED_LENGTH,
+        SECRETKEY_SCALAR_LENGTH,
+        SECRETKEY_NONCE_LENGTH,
 
-pub struct ExpandedSecretKey {
-    pub (crate) key: Scalar,
-    pub (crate) nonce: [u8; 32],
+        // PUBLICKEY_LENGTH,
+    },
+    curve::{
+        CurvePoint,
+        CompressedY,
+    },
+    hash::Hash as Sha512,
+    scalar::Scalar,
+};
+
+pub struct SecretKey {
+    #[allow(dead_code)]
+    pub (crate) seed: [u8; SECRETKEY_SEED_LENGTH],
+    pub (crate) scalar: Scalar,
+    pub (crate) nonce: [u8; SECRETKEY_NONCE_LENGTH],
 }
 
-pub struct PublicKey(
-    pub(crate) CompressedEdwardsY,
-    pub(crate) EdwardsPoint,
+pub struct PublicKey {
+    #[allow(dead_code)]
+    pub(crate) point: CurvePoint,
+    pub(crate) compressed: CompressedY,
 }
 
-impl<'a> From<&'a SecretKey> for PublicKey {
-    /// Derive this public key from its corresponding `SecretKey`.
-    fn from(secret_key: &SecretKey) -> PublicKey {
-        let mut h: Sha512 = Sha512::new();
-        let mut hash: [u8; 64] = [0u8; 64];
-        let mut digest: [u8; 32] = [0u8; 32];
-
-        h.input(secret_key.as_bytes());
-        hash.copy_from_slice(h.result().as_slice());
-
-        digest.copy_from_slice(&hash[..32]);
-
-        PublicKey::mangle_scalar_bits_and_multiply_by_basepoint_to_produce_public_key(&mut digest)
-    }
+pub struct Keypair {
+    pub secret: SecretKey,
+    pub public: PublicKey,
 }
 
-impl PublicKey {
+pub struct Signature {
+    pub r: CompressedY,
+    pub s: Scalar,
+}
 
-    #[inline]
-    pub fn from_bytes(bytes: &[u8]) -> Result<PublicKey, SignatureError> {
-        if bytes.len() != PUBLIC_KEY_LENGTH {
-            return Err(SignatureError(InternalError::BytesLengthError {
-                name: "PublicKey",
-                length: PUBLIC_KEY_LENGTH,
-            }));
+impl Keypair {
+    pub fn sign(&self, message: &[u8]) -> Signature {
+
+        // R = rB, with r = H(nonce, M)
+        let mut first_hash = Sha512::new();
+        first_hash.update(&self.secret.nonce);
+        first_hash.update(message);
+        let r: Scalar = Scalar::from_u512(&first_hash.finalize());
+        #[allow(non_snake_case)]
+        let R: CompressedY = (&r * &CurvePoint::basepoint()).compressed();
+
+        // S = r + H(R, A, M)s (mod l), with A = sB the public key
+        let mut second_hash = Sha512::new();
+        second_hash.update(&R.0);
+        second_hash.update(&self.public.compressed.0);
+        second_hash.update(message);
+
+        let h: Scalar = Scalar::from_u512(&second_hash.finalize());
+        // let s: Scalar = &r + &(&h * &self.secret.scalar);
+
+        // calculate S = r + H(R,A,M) mod \ell, with h = H(R,A,M)
+        let mut x: [i64; 64] = [0; 64];
+        for i in 0..32 {
+            x[i] = r.0[i] as _;
         }
-        let mut bits: [u8; 32] = [0u8; 32];
-        bits.copy_from_slice(&bytes[..32]);
+        for i in 0..32 {
+            for j in 0..32 {
+                x[i + j] += h.0[i] as i64 * self.secret.scalar.0[j] as i64;
+            }
+        }
+        #[allow(non_snake_case)]
+        let s = Scalar::modulo_group_order(&mut x);
 
-        let compressed = CompressedEdwardsY(bits);
-        let point = compressed
-            .decompress()
-            .ok_or(SignatureError(InternalError::PointDecompressionError))?;
-
-        Ok(PublicKey(compressed, point))
+        Signature { r: R, s }
     }
 }
+
+impl From<&[u8; SECRETKEY_SEED_LENGTH]> for SecretKey {
+    fn from(seed: &[u8; SECRETKEY_SEED_LENGTH]) -> SecretKey {
+
+        let mut hash: Sha512 = Sha512::new();
+        hash.update(seed);
+        let digest = hash.finalize();
+
+        let mut scalar_bytes = [0u8; 32];
+        scalar_bytes.copy_from_slice(&digest[..SECRETKEY_SCALAR_LENGTH]);
+        let mut scalar = Scalar(scalar_bytes);
+        // let mut scalar = Scalar::from_bytes(&digest[..SECRETKEY_SCALAR_LENGTH]);
+        scalar.0[0] &= 248;
+        scalar.0[31] &= 127;
+        scalar.0[31] |= 64;
+
+        let mut nonce = [0u8; SECRETKEY_NONCE_LENGTH];
+        nonce.copy_from_slice(&digest[SECRETKEY_SCALAR_LENGTH..]);
+
+        SecretKey { seed: seed.clone(), scalar, nonce }
+    }
+}
+
+impl From<&SecretKey> for PublicKey {
+    fn from(secret: &SecretKey) -> PublicKey {
+
+        let point = &secret.scalar * &CurvePoint::basepoint();
+        let compressed = point.compressed();
+
+        PublicKey { point, compressed }
+    }
+}
+
+impl From<&[u8; SECRETKEY_SEED_LENGTH]> for Keypair {
+    fn from(seed: &[u8; SECRETKEY_SEED_LENGTH]) -> Keypair {
+        let secret = SecretKey::from(seed);
+
+        let public = PublicKey::from(&secret);
+
+        Keypair { secret, public }
+    }
+}
+
+// TODO: to_bytes and from_bytes methods for secretkey, publickey and keypair
+
+#[cfg(test)]
+mod tests {
+
+    use super::Keypair;
+
+    #[test]
+    fn test_signature() {
+
+        #![allow(non_snake_case)]
+
+        let seed: [u8; 32] = [
+            0x35, 0xb3, 0x07, 0x76, 0x17, 0x9a, 0x78, 0x58,
+            0x34, 0xf0, 0x4c, 0x82, 0x88, 0x59, 0x5d, 0xf4,
+            0xac, 0xa1, 0x0b, 0x33, 0xaa, 0x12, 0x10, 0xad,
+            0xec, 0x3e, 0x82, 0x47, 0x25, 0x3e, 0x6c, 0x65,
+        ];
+
+        let keypair = Keypair::from(&seed);
+
+        let data = "salty!".as_bytes();
+
+        let R_expected = [
+            0xec, 0x97, 0x27, 0x40, 0x07, 0xe7, 0x08, 0xc6,
+            0xd1, 0xee, 0xd6, 0x01, 0x9f, 0x5d, 0x0f, 0xcb,
+            0xe1, 0x8a, 0x67, 0x70, 0x8d, 0x17, 0x92, 0x4b,
+            0x95, 0xdb, 0x7e, 0x35, 0xcc, 0xaa, 0x06, 0x3a,
+        ];
+
+        let S_expected = [
+            0xb8, 0x64, 0x8c, 0x9b, 0xf5, 0x48, 0xb0, 0x09,
+            0x90, 0x6f, 0xa1, 0x31, 0x09, 0x0f, 0xfe, 0x85,
+            0xa1, 0x7e, 0x89, 0x99, 0xb8, 0xc4, 0x2c, 0x97,
+            0x32, 0xf9, 0xa6, 0x44, 0x2a, 0x17, 0xbc, 0x09,
+        ];
+
+        let signature = keypair.sign(&data);
+
+        assert_eq!(signature.r.0, R_expected);
+        assert_eq!(signature.s.0, S_expected);
+    }
+}
+

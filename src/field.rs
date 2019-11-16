@@ -1,7 +1,6 @@
 use core::{
     // cmp::PartialEq,
     fmt::Debug,
-    // marker::Sized,
     ops::{
         Add,
         AddAssign,
@@ -42,7 +41,8 @@ use subtle::{
 pub trait FieldImplementation
 where
     // Self: Sized,
-    Self: Clone,
+    // Self: Clone,
+    Self: Copy,
     // Self: !Copy,  // not sure - curve25519-dalek uses implicit copies, do we want this?
 
     Self: Debug,

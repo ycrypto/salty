@@ -165,6 +165,7 @@ static IV: [u8; 64] = [
 // - pad message to obtain 128 byte blocks
 // - start with IV
 // - "hash in" each block in turn
+#[allow(dead_code)]
 pub fn sha512(digest: &mut [u8; 64], msg: &[u8]) {
     let l = msg.len();
     // assert!(l >> 125 == 0);  // u128-encoded length is in bits

@@ -11,16 +11,17 @@ keywords = ["no-std", "NaCl"]
 
 [dependencies]
 byteorder = { version = "1.3.2", default-features = false }
-# subtle = "2.2.1"
+subtle = "2.2.1"
 # subtle = { path = "../subtle" }
-subtle = { git = "https://github.com/nickray/subtle.git", branch = "clone-wars" }
+# subtle = { git = "https://github.com/nickray/subtle.git", branch = "clone-wars" }
 
 [build-dependencies]
 cc = "1.0"
 # bindgen = "0.49.3"
 
 [features]
-# default = ["tweetnacl"]
+default = ["tweetnacl"]
+# field-impl-fallback = ["tweetnacl"]
 tweetnacl = []
 
 [profile.release]

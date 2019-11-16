@@ -23,7 +23,7 @@ pub use scalar::Scalar;
 
 pub mod curve;
 
-// pub mod key;
+pub mod keys;
 
 
 // mod internal;

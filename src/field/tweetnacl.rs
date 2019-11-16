@@ -17,7 +17,7 @@ use super::FieldImplementation;
 
 pub type Limbs = [i64; 16];
 
-#[derive(Clone,Debug,Default)]
+#[derive(Clone,Copy,Debug,Default)]
 pub struct FieldElement(pub Limbs);
 
 ///// constant-time swap of field elements

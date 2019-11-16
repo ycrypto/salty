@@ -23,12 +23,12 @@ use crate::{
 
 /// These represent the (X,Y,T,Z) coordinates
 /// TODO: maybe label them properly
-#[derive(Clone,Debug,Default)]
+#[derive(Clone,Copy,Debug,Default)]
 pub struct CurvePoint (
     [FieldElement; 4]
 );
 
-#[derive(Clone,Debug,Default)]
+#[derive(Clone,Copy,Debug,Default)]
 pub struct CompressedY(
     pub [u8; 32])
 ;
