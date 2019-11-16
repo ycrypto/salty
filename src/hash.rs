@@ -1,4 +1,3 @@
-use byteorder::{BigEndian, ByteOrder};
 use core::num::Wrapping;
 
 use crate::constants::{
@@ -85,7 +84,7 @@ fn hash_blocks(digest: &mut [u8; 64], msg: &[u8]) -> usize {
         // This is like Section 6.1.3 from FIPS 180.
         let mut W: [Wrapping<u64>; 16] = Default::default(); //[Wrapping(0); 16];
         for (w, chunk) in W.iter_mut().zip(block.chunks(8)) {
-            *w = Wrapping(BigEndian::read_u64(chunk));
+            *w = Wrapping(u64::from_be_bytes(chunk.try_into().unwrap()));
         }
 
         // initialize "working variables" with previous hash
@@ -138,7 +137,8 @@ fn hash_blocks(digest: &mut [u8; 64], msg: &[u8]) -> usize {
 
     // convert hash parts (u64-words array) back into digest (u8-array)
     for (d, h) in digest.chunks_mut(8).zip(H.iter()) {
-        BigEndian::write_u64(d, h.0);
+        // BigEndian::write_u64(d, h.0);
+        d.copy_from_slice(&h.0.to_be_bytes());
     }
 
     unprocessed
@@ -191,7 +191,8 @@ pub fn sha512(digest: &mut [u8; 64], msg: &[u8]) {
     #[cfg(target_pointer_width = "64")] {
         padding[padding_length - 9] = (l >> 61) as u8;
     }
-    BigEndian::write_u64(&mut padding[padding_length - 8..], (l << 3) as u64);
+    // BigEndian::write_u64(&mut padding[padding_length - 8..], (l << 3) as u64);
+    padding[padding_length - 8..].copy_from_slice(&((l << 3) as u64).to_be_bytes());
 
     let padding = &padding[..padding_length];
     hash_blocks(digest, padding);
@@ -274,13 +275,14 @@ impl Hash {
         // then: bit 1 followed by zero bits until...
         padding[self.unprocessed] = 128;
         // ...message length in bits (NB: l is in bytes)
+
         #[cfg(target_pointer_width = "64")] {
             padding[padding_length - 9] = (self.data_length >> 61) as u8;
         }
-        BigEndian::write_u64(
-            &mut padding[padding_length - 8..],
-            (self.data_length << 3) as u64,
-        );
+
+        // BigEndian::write_u64(&mut padding[padding_length - 8..], (self.data_length << 3) as u64);
+        // padding[padding_length - 8..].copy_from_slice(&((self.data_length << 3) as u64).to_be_bytes());
+        padding[padding_length - 8..padding_length].copy_from_slice(&((self.data_length << 3) as u64).to_be_bytes());
 
         let padding = &padding[..padding_length];
         hash_blocks(&mut self.digest, padding);

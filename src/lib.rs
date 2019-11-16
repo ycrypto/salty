@@ -7,23 +7,25 @@
 pub mod constants;
 
 mod hash;
-pub use hash::{
-    Digest,
-    Hash,
-};
+// pub use hash::{
+//     Digest,
+//     Hash,
+// };
 
 mod field;
-pub use field::{
-    FieldImplementation,
-    FieldElement,
-};
+// pub use field::{
+//     FieldImplementation,
+//     FieldElement,
+// };
 
 mod scalar;
 pub use scalar::Scalar;
 
-pub mod curve;
+mod curve;
+pub use curve::{CurvePoint, CompressedY};
 
-pub mod keys;
+mod keys;
+pub use keys::{SecretKey, PublicKey, Keypair, Signature};
 
 
 // mod internal;
