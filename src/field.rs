@@ -15,10 +15,8 @@ use core::{
 
 use subtle::{
     ConstantTimeEq,
-    // ConditionallySelectable,
+    ConditionallySelectable,
 };
-
-pub mod tweetnacl;
 
 /// Requirements on an implementation of the base field.
 ///
@@ -51,7 +49,8 @@ where
     // Self: Default,  // would want this to return zero I think
 
     // for<'a, 'b> &'a Self: PartialEq
-    // Self: ConditionallySelectable,
+    Self: ConditionallySelectable,
+    for<'b> Self: ConstantTimeEq,
 
     for<'a, 'b> &'a Self: Add<&'b Self, Output = Self>,
     for<'b> Self: AddAssign<&'b Self>,
@@ -71,8 +70,8 @@ where
     const ZERO: Self;
     const ONE: Self;
     const D2: Self;
-    const ED25519_BASEPOINT_X: Self;
-    const ED25519_BASEPOINT_Y: Self;
+    const BASEPOINT_X: Self;
+    const BASEPOINT_Y: Self;
 
     // /// swap p and q iff b is true, in constant time
     // // TODO: would be great to mark this with an attribute
@@ -82,9 +81,9 @@ where
 
     // fn reduce(&mut self);
 
-    /// We don't want to introduce Copy on all our types,
-    /// and be indirect about swap, so we do this ourselves
-    fn conditional_swap(&mut self, other: &mut Self, b: bool);
+    // /// We don't want to introduce Copy on all our types,
+    // /// and be indirect about swap, so we do this ourselves
+    // fn conditional_swap(&mut self, other: &mut Self, b: bool);
 
     /// to canonical representation as little-endian bytes
     fn to_bytes(&self) -> [u8; 32];
@@ -118,3 +117,9 @@ where
 
 // impl PartialEq for FieldImplementation {
 // }
+
+#[cfg(feature = "tweetnacl")]
+pub mod tweetnacl;
+#[cfg(feature = "tweetnacl")]
+pub use tweetnacl::{Limbs, FieldElement};
+

@@ -11,14 +11,17 @@ keywords = ["no-std", "NaCl"]
 
 [dependencies]
 byteorder = { version = "1.3.2", default-features = false }
-subtle = "2.2.1"
+# subtle = "2.2.1"
+# subtle = { path = "../subtle" }
+subtle = { git = "https://github.com/nickray/subtle.git", branch = "clone-wars" }
 
 [build-dependencies]
 cc = "1.0"
 # bindgen = "0.49.3"
 
 [features]
-cortex-m4 = []
+# default = ["tweetnacl"]
+tweetnacl = []
 
 [profile.release]
 codegen-units = 1

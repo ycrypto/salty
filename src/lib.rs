@@ -13,9 +13,10 @@ pub use hash::{
 };
 
 mod field;
-pub use field::FieldImplementation;
-pub use field::tweetnacl::FieldElement as TweetNaclFieldElement;
-// pub use field::haase::FieldElement as HaaseFieldElement;
+pub use field::{
+    FieldImplementation,
+    FieldElement,
+};
 
 mod scalar;
 pub use scalar::Scalar;

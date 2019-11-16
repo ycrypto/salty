@@ -7,49 +7,69 @@ use core::ops::{
     MulAssign,
 };
 
-// use subtle::{
-//     Choice,
-//     ConditionallySelectable,
-// };
+use subtle::{
+    Choice,
+    ConditionallySelectable,
+    ConstantTimeEq,
+};
 
 use super::FieldImplementation;
 
-type Limbs = [i64; 16];
+pub type Limbs = [i64; 16];
 
 #[derive(Clone,Debug,Default)]
 pub struct FieldElement(pub Limbs);
 
-/// constant-time swap of field elements
-pub fn _conditional_swap(p: &mut FieldElement, q: &mut FieldElement, b: i64) {
-    // TODO: change signature to `b: bool`?
-    //
-    // swap p and q iff b (is true)
-    //
-    // a) b = 0
-    // --> mask = 0, t = 0, p and q remain as they were
-    //
-    // b) b = 1
-    // --> mask = 0xFFFFFFFF, t = p[i]^q[i],
-    // so p[i] <- p[i]^p[i]^q[i] = q[i] and similarly
-    // q[i] <- p[i], so they swap
-    //
-    // see test_bit_fiddling below for "verification"
+///// constant-time swap of field elements
+//pub fn _conditional_swap(p: &mut FieldElement, q: &mut FieldElement, b: i64) {
+//    // TODO: change signature to `b: bool`?
+//    //
+//    // swap p and q iff b (is true)
+//    //
+//    // a) b = 0
+//    // --> mask = 0, t = 0, p and q remain as they were
+//    //
+//    // b) b = 1
+//    // --> mask = 0xFFFFFFFF, t = p[i]^q[i],
+//    // so p[i] <- p[i]^p[i]^q[i] = q[i] and similarly
+//    // q[i] <- p[i], so they swap
+//    //
+//    // see test_bit_fiddling below for "verification"
 
-    let mask: i64 = !(b - 1);
-    for (pi, qi) in p.0.iter_mut().zip(q.0.iter_mut()) {
-        let t = mask & (*pi ^ *qi);
-        *pi ^= t;
-        *qi ^= t;
+//    let mask: i64 = !(b - 1);
+//    for (pi, qi) in p.0.iter_mut().zip(q.0.iter_mut()) {
+//        let t = mask & (*pi ^ *qi);
+//        *pi ^= t;
+//        *qi ^= t;
+//    }
+//}
+
+impl ConditionallySelectable for FieldElement {
+    fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
+        let mut selection = Self::default();
+        for i in 0..16 {
+        // for (r, (ai, bi)) in r.0.ia.0.iter_mut().zip(b.0.iter_mut()) {
+        //     i64::conditional_select(ai, bi, choice);
+        // }
+            selection.0[i] = i64::conditional_select(&a.0[i], &b.0[i], choice);
+        }
+        selection
+    }
+
+    fn conditional_swap(a: &mut Self, b: &mut Self, choice: Choice) {
+        // what TweetNacl originally does
+        // let mask: i64 = !(b - 1);
+        // TweetNacl translated to Choice language
+        // let mask: i64 = !(choice.unwrap_u8() as i64) - 1);
+        // `subtle` definition, which is equivalent
+        let mask: i64 = -(choice.unwrap_u8() as i64);
+        for (ai, bi) in a.0.iter_mut().zip(b.0.iter_mut()) {
+            let t = mask & (*ai ^ *bi);
+            *ai ^= t;
+            *bi ^= t;
+        }
     }
 }
-
-// impl ConditionallySelectable for FieldElement {
-//     fn conditional_select(a: &Self, b: &Self, choice: Choice) {
-//         for (ai, bi) in a.0.iter_mut().zip(b.0.iter_mut()) {
-//             i64::conditional_select(ai, bi, choice);
-//         }
-//     }
-// }
 
 impl FieldImplementation for FieldElement {
     type Limbs = Limbs;
@@ -75,14 +95,14 @@ impl FieldImplementation for FieldElement {
         0xfce7, 0x56df, 0xd9dc, 0x2406,
     ]);
 
-    const ED25519_BASEPOINT_X: Self = Self([
+    const BASEPOINT_X: Self = Self([
         0xd51a, 0x8f25, 0x2d60, 0xc956,
         0xa7b2, 0x9525, 0xc760, 0x692c,
         0xdc5c, 0xfdd6, 0xe231, 0xc0a4,
         0x53fe, 0xcd6e, 0x36d3, 0x2169,
     ]);
 
-    const ED25519_BASEPOINT_Y: Self = Self([
+    const BASEPOINT_Y: Self = Self([
         0x6658, 0x6666, 0x6666, 0x6666,
         0x6666, 0x6666, 0x6666, 0x6666,
         0x6666, 0x6666, 0x6666, 0x6666,
@@ -94,9 +114,9 @@ impl FieldImplementation for FieldElement {
     //     self.reduce_once();
     // }
 
-    fn conditional_swap(&mut self, other: &mut FieldElement, b: bool) {
-        _conditional_swap(self, other, b as i64);
-    }
+    // fn conditional_swap(&mut self, other: &mut FieldElement, b: bool) {
+    //     _conditional_swap(self, other, b as i64);
+    // }
 
     fn to_bytes(&self) -> [u8; 32] {
         // make our own private copy
@@ -121,7 +141,7 @@ impl FieldImplementation for FieldElement {
             m[15] = fe.0[15] - 0x7fff - ((m[14] >> 16) & 1);
             let b = (m[15] >> 16) & 1;
             m[14] &= 0xffff;
-            FieldElement::conditional_swap(&mut fe, &mut FieldElement(m), (1 - b) != 0);
+            FieldElement::conditional_swap(&mut fe, &mut FieldElement(m), ((1 - b) as u8).into());
         }
 
         let mut bytes: [u8; 32] = Default::default();
@@ -146,6 +166,14 @@ impl FieldImplementation for FieldElement {
     }
 }
 
+impl ConstantTimeEq for FieldElement {
+    fn ct_eq(&self, other: &Self) -> Choice {
+        let canonical_self = self.to_bytes();
+        let canonical_other = other.to_bytes();
+
+        canonical_self.ct_eq(&canonical_other)
+    }
+}
 // fn fully_reduce(fe: &mut FieldElement) {
 //     reduce(fe);
 //     reduce(fe);
@@ -311,6 +339,7 @@ mod tests {
 
     use crate::field::FieldImplementation;
     use super::FieldElement;
+    use subtle::ConstantTimeEq;
 
     #[test]
     fn test_one_plus_one() {
@@ -326,6 +355,7 @@ mod tests {
 
         // TODO: Implement PartialEq (hopefully in constant time!)
         assert_eq!(two.0, expected.0);
+        assert!(bool::from(two.ct_eq(&expected)))
 
     }
 
@@ -338,6 +368,7 @@ mod tests {
 
         // TODO: Implement PartialEq (hopefully in constant time!)
         assert_eq!(result.0, zero.0);
+        assert!(bool::from(result.ct_eq(&zero)))
 
     }
 
@@ -347,10 +378,12 @@ mod tests {
         let two = &one + &one;
         let three = &two + &one;
 
+        let two_times_three = &two * &three;
         // no multiplications, just sum up ONEs
         let six = (1..=6).fold(FieldElement::ZERO, |partial_sum, _| &partial_sum + &FieldElement::ONE);
 
-        assert_eq!((&two * &three).to_bytes(), six.to_bytes());
+        assert_eq!(two_times_three.to_bytes(), six.to_bytes());
+        assert!(bool::from(two_times_three.ct_eq(&six)));
 
     }
 
@@ -361,5 +394,6 @@ mod tests {
 
         let product = &d2 * &maybe_inverse;
         assert_eq!(product.to_bytes(), FieldElement::ONE.to_bytes());
+        assert!(bool::from(product.ct_eq(&FieldElement::ONE)));
     }
 }
