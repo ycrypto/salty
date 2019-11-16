@@ -1,11 +1,11 @@
 use core::num::Wrapping;
 
 use crate::constants::{
-    // SHA256_BYTES,
-    SHA512_BYTES,
+    // SHA256_LENGTH,
+    SHA512_LENGTH,
 };
 
-pub type Digest = [u8; SHA512_BYTES];
+pub type Digest = [u8; SHA512_LENGTH];
 
 #[allow(non_snake_case)]
 // this is `rotate-right(x, n)` for 64-bit words
@@ -210,7 +210,7 @@ pub struct Hash {
 
 impl Hash {
     pub fn new() -> Hash {
-        let mut digest: Digest = [0; SHA512_BYTES];
+        let mut digest: Digest = [0; SHA512_LENGTH];
         digest.copy_from_slice(&IV);
         Hash {
             digest: digest,

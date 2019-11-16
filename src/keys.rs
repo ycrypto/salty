@@ -11,7 +11,10 @@ use crate::{
         CompressedY,
     },
     hash::Hash as Sha512,
-    scalar::Scalar,
+    scalar::{
+        Scalar,
+        TweetNaclScalar,
+    },
 };
 
 pub struct SecretKey {
@@ -44,9 +47,11 @@ impl Keypair {
         let mut first_hash = Sha512::new();
         first_hash.update(&self.secret.nonce);
         first_hash.update(message);
-        let r: Scalar = Scalar::from_u512(&first_hash.finalize());
+
+        let r: Scalar = Scalar::from_u512_le(&first_hash.finalize());
         #[allow(non_snake_case)]
         let R: CompressedY = (&r * &CurvePoint::basepoint()).compressed();
+
 
         // S = r + H(R, A, M)s (mod l), with A = sB the public key
         let mut second_hash = Sha512::new();
@@ -54,21 +59,9 @@ impl Keypair {
         second_hash.update(&self.public.compressed.0);
         second_hash.update(message);
 
-        let h: Scalar = Scalar::from_u512(&second_hash.finalize());
-        // let s: Scalar = &r + &(&h * &self.secret.scalar);
-
-        // calculate S = r + H(R,A,M) mod \ell, with h = H(R,A,M)
-        let mut x: [i64; 64] = [0; 64];
-        for i in 0..32 {
-            x[i] = r.0[i] as _;
-        }
-        for i in 0..32 {
-            for j in 0..32 {
-                x[i + j] += h.0[i] as i64 * self.secret.scalar.0[j] as i64;
-            }
-        }
-        #[allow(non_snake_case)]
-        let s = Scalar::modulo_group_order(&mut x);
+        let h: Scalar = Scalar::from_u512_le(&second_hash.finalize());
+        let mut s = &r.into() + &(&h.into() * &TweetNaclScalar::from(&self.secret.scalar));
+        let s = s.reduce_modulo_ell();
 
         Signature { r: R, s }
     }
