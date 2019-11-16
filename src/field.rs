@@ -4,11 +4,11 @@ use core::{
     ops::{
         Add,
         AddAssign,
+        Neg,
         Sub,
         SubAssign,
         Mul,
         MulAssign,
-        // Neg,
     },
 };
 
@@ -54,6 +54,8 @@ where
 
     for<'a, 'b> &'a Self: Add<&'b Self, Output = Self>,
     for<'b> Self: AddAssign<&'b Self>,
+
+    for<'a> &'a Self: Neg<Output = Self>,
 
     for<'a, 'b> &'a Self: Sub<&'b Self, Output = Self>,
     for<'b> Self: SubAssign<&'b Self>,

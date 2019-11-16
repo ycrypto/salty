@@ -2,6 +2,7 @@ use core::{
     cmp::PartialEq,
     ops::{
         Add,
+        Neg,
         Mul,
     }
 };
@@ -22,12 +23,15 @@ use crate::{
 
 
 /// These represent the (X,Y,T,Z) coordinates
-/// TODO: maybe label them properly
 #[derive(Clone,Copy,Debug,Default)]
 pub struct CurvePoint (
+    // TODO: maybe label them properly
     [FieldElement; 4]
 );
 
+/// "Compressed" form of a `CurvePoint`, whereby
+/// the sign of the x-coordinate is stuffed in a
+/// spare bit of the y-coordinate
 #[derive(Clone,Copy,Debug,Default)]
 pub struct CompressedY(
     pub [u8; 32])
@@ -111,6 +115,15 @@ impl<'a, 'b> Add<&'b CurvePoint> for &'a CurvePoint {
     }
 }
 
+impl<'a> Neg for &'a CurvePoint {
+    type Output = CurvePoint;
+
+    fn neg(self) -> CurvePoint {
+        let p = &self.0;
+        CurvePoint([-&p[0], p[1], p[2], -&p[3]])
+    }
+}
+
 impl<'a, 'b> Mul<&'b CurvePoint> for &'a Scalar {
 
     type Output = CurvePoint;
@@ -154,6 +167,12 @@ impl ConditionallySelectable for CurvePoint {
         for (pi, qi) in p.0.iter_mut().zip(q.0.iter_mut()) {
             FieldElement::conditional_swap(pi, qi, choice);
         }
+    }
+}
+
+impl CompressedY {
+    pub fn to_bytes(&self) -> [u8; 32] {
+        self.0
     }
 }
 
@@ -235,5 +254,14 @@ mod tests {
         let b = &s * &bp;
 
         assert_eq!(a, b);
+    }
+
+    #[test]
+    fn test_negation() {
+        let bp = CurvePoint::basepoint();
+        let minus_bp = -&bp;
+        let maybe_neutral = &bp + &minus_bp;
+
+        assert_eq!(maybe_neutral, CurvePoint::neutral_element());
     }
 }

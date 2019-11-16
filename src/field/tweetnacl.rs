@@ -1,6 +1,7 @@
 use core::ops::{
     Add,
     AddAssign,
+    Neg,
     Sub,
     SubAssign,
     Mul,
@@ -174,33 +175,6 @@ impl ConstantTimeEq for FieldElement {
         canonical_self.ct_eq(&canonical_other)
     }
 }
-// fn fully_reduce(fe: &mut FieldElement) {
-//     reduce(fe);
-//     reduce(fe);
-// }
-
-// fn reduce(fe: &mut FieldElement) {
-//     // TODO: multiplication calls this twice
-//     // What exactly are the guarantees here?
-//     // Why don't we do this twice if it's needed?
-//     for i in 0..16 {
-//         // add 2**16
-//         fe.0[i] += 1 << 16;
-//         // "carry" part, everything over radix 2**16
-//         let carry = fe.0[i] >> 16;
-
-//         // a) i < 15: add carry bit, subtract 1 to compensate addition of 2^16
-//         // --> o[i + 1] += c - 1  // add carry bit, subtract
-//         // b) i == 15: wraps around to index 0 via 2^256 = 38
-//         // --> o[0] += 38 * (c - 1)
-//         fe.0[(i + 1) * ((i < 15) as usize)] +=
-//             carry - 1 + 37 * (carry - 1) * ((i == 15) as i64);
-//         // get rid of carry bit
-//         // TODO: why not get rid of it immediately. kinda clearer
-//         fe.0[i] -= carry << 16;
-//     }
-// }
-
 
 impl<'a, 'b> Add<&'b FieldElement> for &'a FieldElement {
     type Output = FieldElement;
@@ -219,6 +193,19 @@ impl<'b> AddAssign<&'b FieldElement> for FieldElement {
         for (x, y) in self.0.iter_mut().zip(other.0.iter()) {
             *x += y;
         }
+    }
+}
+
+impl<'a> Neg for &'a FieldElement {
+    type Output = FieldElement;
+
+    /// Subition of field elements
+    fn neg(self) -> FieldElement {
+        let mut negation = self.clone();
+        for (i, xi) in self.0.iter().enumerate() {
+            negation.0[i] = -xi;
+        }
+        negation
     }
 }
 
@@ -395,5 +382,14 @@ mod tests {
         let product = &d2 * &maybe_inverse;
         assert_eq!(product.to_bytes(), FieldElement::ONE.to_bytes());
         assert!(bool::from(product.ct_eq(&FieldElement::ONE)));
+    }
+
+    #[test]
+    fn test_negation() {
+        let d2 = FieldElement::D2;
+        let minus_d2 = -&d2;
+        let maybe_zero = &d2 + &minus_d2;
+
+        assert_eq!(FieldElement::ZERO.to_bytes(), maybe_zero.to_bytes());
     }
 }

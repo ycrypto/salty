@@ -201,18 +201,18 @@ pub fn sha512(digest: &mut [u8; 64], msg: &[u8]) {
 }
 
 
-pub struct Hash {
+pub struct Sha512 {
     digest: Digest,
     buffer: [u8; 128],
     unprocessed: usize,
     data_length: usize,
 }
 
-impl Hash {
-    pub fn new() -> Hash {
+impl Sha512 {
+    pub fn new() -> Sha512 {
         let mut digest: Digest = [0; SHA512_LENGTH];
         digest.copy_from_slice(&IV);
-        Hash {
+        Sha512 {
             digest: digest,
             buffer: [0; 128],
             unprocessed: 0,

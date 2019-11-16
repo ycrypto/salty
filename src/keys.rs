@@ -1,4 +1,6 @@
 use crate::{
+    Error,
+    Result,
     constants::{
         SECRETKEY_SEED_LENGTH,
         SECRETKEY_SCALAR_LENGTH,
@@ -12,13 +14,15 @@ use crate::{
         CurvePoint,
         CompressedY,
     },
-    hash::Hash as Sha512,
+    hash::Sha512,
     scalar::{
         Scalar,
         TweetNaclScalar,
     },
 };
 
+/// a secret key, consisting internally of the seed and
+/// its expansion into a scalar and a "nonce".
 pub struct SecretKey {
     #[allow(dead_code)]
     pub (crate) seed: [u8; SECRETKEY_SEED_LENGTH],
@@ -26,17 +30,23 @@ pub struct SecretKey {
     pub (crate) nonce: [u8; SECRETKEY_NONCE_LENGTH],
 }
 
+/// a public key, consisting internally of both its defining
+/// point (the secret scalar times the curve base point)
+/// and the compression of that point.
 pub struct PublicKey {
     #[allow(dead_code)]
     pub(crate) point: CurvePoint,
     pub(crate) compressed: CompressedY,
 }
 
+/// pair of secret and corresponding public keys
 pub struct Keypair {
     pub secret: SecretKey,
     pub public: PublicKey,
 }
 
+/// a signature: pair consisting of a curve point "R" in
+/// compressed form and a scalar "s".
 pub struct Signature {
     pub r: CompressedY,
     pub s: Scalar,
@@ -93,7 +103,6 @@ impl Keypair {
         #[allow(non_snake_case)]
         let R: CompressedY = (&r * &CurvePoint::basepoint()).compressed();
 
-
         let second_hash = Sha512::new()
             // Ed25519ph parts
             .updated(b"SigEd25519 no Ed25519 collisions")
@@ -115,23 +124,86 @@ impl Keypair {
     }
 }
 
+impl PublicKey {
+    pub fn verify(&self, message: &[u8], signature: &Signature) -> Result {
+        let hash = Sha512::new()
+            .updated(&signature.r.0)
+            .updated(&self.compressed.0)
+            .updated(message)
+            .finalize();
+
+        let k: Scalar = Scalar::from_u512_le(&hash);
+
+        #[allow(non_snake_case)]
+        let minus_A = -&self.point;
+
+        #[allow(non_snake_case)]
+        let R: CurvePoint = &(&signature.s * &CurvePoint::basepoint()) + &(&k * &minus_A);
+
+        if R.compressed() == signature.r {
+            Ok(())
+        } else {
+            Err(Error::SignatureInvalid)
+        }
+    }
+
+    pub fn verify_prehashed(
+        &self,
+        prehashed_message: &[u8],
+        signature: &Signature,
+        context: Option<&'static [u8]>,
+    ) -> Result {
+
+        // By default, the context is an empty string.
+        let context: &[u8] = context.unwrap_or(b"");
+        debug_assert!(context.len() <= 255, "The context must not be longer than 255 octets.");
+
+        let hash = Sha512::new()
+            // Ed25519ph parts
+            .updated(b"SigEd25519 no Ed25519 collisions")
+            .updated(&[1])
+            // context parts
+            .updated(&[context.len() as u8])
+            .updated(context)
+            // usual parts
+            .updated(&signature.r.0)
+            .updated(&self.compressed.0)
+            .updated(prehashed_message)
+            .finalize();
+
+        let k: Scalar = Scalar::from_u512_le(&hash);
+
+        #[allow(non_snake_case)]
+        let minus_A = -&self.point;
+
+        #[allow(non_snake_case)]
+        let R: CurvePoint = &(&signature.s * &CurvePoint::basepoint()) + &(&k * &minus_A);
+
+        if R.compressed() == signature.r {
+            Ok(())
+        } else {
+            Err(Error::SignatureInvalid)
+        }
+    }
+
+}
+
 impl From<&[u8; SECRETKEY_SEED_LENGTH]> for SecretKey {
     fn from(seed: &[u8; SECRETKEY_SEED_LENGTH]) -> SecretKey {
 
-        let mut hash: Sha512 = Sha512::new();
-        hash.update(seed);
-        let digest = hash.finalize();
+        let hash = Sha512::new()
+            .updated(seed)
+            .finalize();
 
         let mut scalar_bytes = [0u8; 32];
-        scalar_bytes.copy_from_slice(&digest[..SECRETKEY_SCALAR_LENGTH]);
+        scalar_bytes.copy_from_slice(&hash[..SECRETKEY_SCALAR_LENGTH]);
         let mut scalar = Scalar(scalar_bytes);
-        // let mut scalar = Scalar::from_bytes(&digest[..SECRETKEY_SCALAR_LENGTH]);
         scalar.0[0] &= 248;
         scalar.0[31] &= 127;
         scalar.0[31] |= 64;
 
         let mut nonce = [0u8; SECRETKEY_NONCE_LENGTH];
-        nonce.copy_from_slice(&digest[SECRETKEY_SCALAR_LENGTH..]);
+        nonce.copy_from_slice(&hash[SECRETKEY_SCALAR_LENGTH..]);
 
         SecretKey { seed: seed.clone(), scalar, nonce }
     }
@@ -199,10 +271,14 @@ mod tests {
 
         assert_eq!(signature.r.0, R_expected);
         assert_eq!(signature.s.0, S_expected);
+
+        let public_key = keypair.public;
+        let verification = public_key.verify(&data, &signature);
+        assert!(verification.is_ok());
     }
 
     #[test]
-    fn test_ed25519ph_with_rf8032_test_vector() {
+    fn test_ed25519ph_with_rfc_8032_test_vector() {
         let seed: [u8; 32] = [
             0x83, 0x3f, 0xe6, 0x24, 0x09, 0x23, 0x7b, 0x9d,
             0x62, 0xec, 0x77, 0x58, 0x75, 0x20, 0x91, 0x1e,
@@ -234,6 +310,10 @@ mod tests {
 
         assert_eq!(signature.r.0, expected_r);
         assert_eq!(signature.s.0, expected_s);
+
+        let public_key = keypair.public;
+        let verification = public_key.verify_prehashed(&prehashed_message, &signature, None);
+        assert!(verification.is_ok());
     }
 }
 

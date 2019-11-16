@@ -10,6 +10,9 @@ pub type U256le = [u8; 32];
 /// 64 octets, interpreted as 256bit integer
 pub type U512le = [u8; 64];
 
+/// Since the curve is an abelian group, it has a module
+/// structure, consisting of these scalars. They are the
+/// integers modulo "ell", where "ell" is 2**252 + something something.
 pub struct Scalar(
     pub (crate) [u8; SCALAR_LENGTH]
 );
@@ -178,6 +181,10 @@ impl Scalar {
 
     pub fn from_bytes(bytes: &[u8; SCALAR_LENGTH]) -> Self {
         Scalar(bytes.clone())
+    }
+
+    pub fn to_bytes(&self) -> [u8; SCALAR_LENGTH] {
+        self.0
     }
 
     pub fn from_u256_le(x: &U256le) -> Scalar {
