@@ -1,3 +1,5 @@
+use core::convert::TryFrom;
+
 use crate::{
     Error,
     Result,
@@ -6,9 +8,9 @@ use crate::{
         SECRETKEY_SCALAR_LENGTH,
         SECRETKEY_NONCE_LENGTH,
 
-        // PUBLICKEY_LENGTH,
-
         SHA512_LENGTH,
+        PUBLICKEY_SERIALIZED_LENGTH,
+        SIGNATURE_SERIALIZED_LENGTH,
     },
     curve::{
         CurvePoint,
@@ -51,6 +53,15 @@ pub struct Signature {
     pub r: CompressedY,
     pub s: Scalar,
 }
+
+// impl Signature {
+//     pub fn to_bytes(&self) -> [u8; SIGNATURE_SERIALIZED_LENGTH] {
+//         let mut signature_bytes: [u8; SIGNATURE_SERIALIZED_LENGTH] = [0u8; SIGNATURE_SERIALIZED_LENGTH];
+//         signature_bytes[..32].copy_from_slice(self.r.as_bytes());
+//         signature_bytes[32..].copy_from_slice(self.s.as_bytes());
+//         signature_bytes
+//     }
+// }
 
 impl Keypair {
     pub fn sign(&self, message: &[u8]) -> Signature {
@@ -219,6 +230,16 @@ impl From<&SecretKey> for PublicKey {
     }
 }
 
+impl TryFrom<&[u8; PUBLICKEY_SERIALIZED_LENGTH]> for PublicKey {
+    type Error = crate::Error;
+
+    fn try_from(bytes: &[u8; PUBLICKEY_SERIALIZED_LENGTH]) -> Result<PublicKey> {
+        let compressed = CompressedY(bytes.clone());
+        let point = compressed.decompressed()?;
+        Ok(PublicKey { compressed, point } )
+    }
+}
+
 impl From<&[u8; SECRETKEY_SEED_LENGTH]> for Keypair {
     fn from(seed: &[u8; SECRETKEY_SEED_LENGTH]) -> Keypair {
         let secret = SecretKey::from(seed);
@@ -229,6 +250,31 @@ impl From<&[u8; SECRETKEY_SEED_LENGTH]> for Keypair {
     }
 }
 
+impl From<&[u8; SIGNATURE_SERIALIZED_LENGTH]> for Signature {
+    fn from(bytes: &[u8; SIGNATURE_SERIALIZED_LENGTH]) -> Signature {
+        let mut r_bytes: [u8; 32] = [0; 32];
+        r_bytes.copy_from_slice(&bytes[..32]);
+        let r = CompressedY::from(&r_bytes);
+
+        let mut s_bytes: [u8; 32] = [0; 32];
+        s_bytes.copy_from_slice(&bytes[32..]);
+        let s = Scalar::from(&s_bytes);
+
+        Signature { r, s }
+    }
+
+}
+
+impl Signature {
+    pub fn to_bytes(&self) -> [u8; SIGNATURE_SERIALIZED_LENGTH] {
+        let mut signature_bytes: [u8; SIGNATURE_SERIALIZED_LENGTH] = [0u8; SIGNATURE_SERIALIZED_LENGTH];
+        signature_bytes[..32].copy_from_slice(self.r.as_bytes());
+        signature_bytes[32..].copy_from_slice(self.s.as_bytes());
+        signature_bytes
+    }
+}
+
+
 // TODO: to_bytes and from_bytes methods for secretkey, publickey and keypair
 
 #[cfg(test)]
@@ -236,6 +282,38 @@ mod tests {
 
     use super::Keypair;
     use crate::hash::Sha512;
+
+    #[test]
+    fn test_decompression() {
+        #![allow(non_snake_case)]
+
+        // let seed: [u8; 32] = [
+        //     0x35, 0xb3, 0x07, 0x76, 0x17, 0x9a, 0x78, 0x58,
+        //     0x34, 0xf0, 0x4c, 0x82, 0x88, 0x59, 0x5d, 0xf4,
+        //     0xac, 0xa1, 0x0b, 0x33, 0xaa, 0x12, 0x10, 0xad,
+        //     0xec, 0x3e, 0x82, 0x47, 0x25, 0x3e, 0x6c, 0x65,
+        // ];
+
+        let mut seed: [u8; 32] = [
+            0x35, 0xb0, 0x07, 0x76, 0x17, 0x9a, 0x78, 0x50,
+            0x34, 0xff, 0x4c, 0x82, 0x88, 0x00, 0x5d, 0xf4,
+            0xac, 0xaf, 0x0b, 0x33, 0xaa, 0x12, 0x10, 0xad,
+            0xec, 0x30, 0x82, 0x47, 0x25, 0x3e, 0x6c, 0x65,
+        ];
+
+        for i in 0..=255 {
+            seed[0] = i;
+            let keypair = Keypair::from(&seed);
+            let public = keypair.public;
+
+            assert_eq!(public.point.compressed(), public.compressed);
+            let possible_point = public.compressed.decompressed();
+            assert!(possible_point.is_ok());
+            let candidate_point = possible_point.unwrap();
+            assert_eq!(candidate_point.compressed(), public.compressed);
+            assert_eq!(public.point, candidate_point);
+        }
+    }
 
     #[test]
     fn test_signature() {

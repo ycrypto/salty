@@ -13,8 +13,9 @@ pub type U512le = [u8; 64];
 /// Since the curve is an abelian group, it has a module
 /// structure, consisting of these scalars. They are the
 /// integers modulo "ell", where "ell" is 2**252 + something something.
+#[repr(C)]
 pub struct Scalar(
-    pub (crate) [u8; SCALAR_LENGTH]
+    pub [u8; SCALAR_LENGTH]
 );
 
 /// NB: The buffer is assumed to be zero from
@@ -30,6 +31,12 @@ pub struct Scalar(
 pub(crate) struct TweetNaclScalar(
     pub (crate) [i64; 64]
 );
+
+impl From<&[u8; SCALAR_LENGTH]> for Scalar {
+    fn from(bytes: &[u8; SCALAR_LENGTH]) -> Scalar {
+        Scalar(bytes.clone())
+    }
+}
 
 impl From<&[u8; 64]> for TweetNaclScalar {
     fn from(bytes: &[u8; 64]) -> TweetNaclScalar {
@@ -181,6 +188,10 @@ impl Scalar {
 
     pub fn from_bytes(bytes: &[u8; SCALAR_LENGTH]) -> Self {
         Scalar(bytes.clone())
+    }
+
+    pub fn as_bytes(&self) -> &[u8; SCALAR_LENGTH] {
+        &self.0
     }
 
     pub fn to_bytes(&self) -> [u8; SCALAR_LENGTH] {

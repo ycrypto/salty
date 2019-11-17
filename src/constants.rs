@@ -12,6 +12,8 @@ pub const SECRETKEY_SEED_LENGTH: usize = 32;
 pub const SECRETKEY_SCALAR_LENGTH: usize = 32;
 /// the length of the nonce part of a secret key (internal)
 pub const SECRETKEY_NONCE_LENGTH: usize = 32;
+/// the length of a compressed point
+pub const COMPRESSED_Y_LENGTH: usize = 32;
 
 /// the length of a public key when serialized
 pub const PUBLICKEY_SERIALIZED_LENGTH: usize = 32;

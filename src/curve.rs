@@ -14,6 +14,9 @@ use subtle::{
 };
 
 use crate::{
+    Error,
+    Result,
+    constants::COMPRESSED_Y_LENGTH,
     field::{
         FieldImplementation,
         FieldElement,
@@ -37,6 +40,102 @@ pub struct CompressedY(
     pub [u8; 32])
 ;
 
+impl From<&[u8; COMPRESSED_Y_LENGTH]> for CompressedY {
+    fn from(bytes: &[u8; COMPRESSED_Y_LENGTH]) -> CompressedY {
+        CompressedY(bytes.clone())
+    }
+}
+
+impl CompressedY {
+    /// This is rather tricky: to get the x-coordinate,
+    /// and not just its sign, need to calculate the square
+    /// root of `u/v := (y**2 - 1)/(dy**2 + 1)`. Moreover, we want
+    /// to detect whether our compressed Y actually corresponds
+    /// to a point on the curve! The original sources are
+    /// [the Tweet NaCl paper, section 5](tweetnacl) and
+    /// the [ed25519 paper][ed25519], also section 5.
+    ///
+    /// [tweetnacl]: http://tweetnacl.cr.yp.to/tweetnacl-20140917.pdf
+    /// [ed25519]: https://cryptojedi.org/papers/ed25519-20110926.pdf
+    pub fn decompressed(&self) -> Result<CurvePoint> {
+        #![allow(non_snake_case)]
+
+        // point = (X, Y, Z, T)
+        //
+        // basic strategy: use exponentiation by `2**252 - 3`,
+        // which "has all bits set except position 1".
+
+        // TODO: actually implement TryFrom
+        // let Y = FieldElement::try_from(self.as_bytes())?;
+        let Y = FieldElement::from_bytes_unchecked(self.as_bytes());
+        let Z = FieldElement::ONE;
+        let Y_squared = Y.squared();
+
+        let u = &Y_squared - &Z;  // aka num[erator], y**2 - 1
+        let v = &(&Y_squared * &FieldElement::D) + &Z;  // aka den[ominator], dy**2 + 1
+
+        let v2 = v.squared();
+        let v4 = v2.squared();
+        let v7 = &(&v4 * &v2) * &v;
+
+        let t = &v7 * &u; // term: t = uv**7
+        let mut X = &(&(&t.possible_sqrt() * &u) * &v2) * &v;  // aka `beta`
+
+        let chk = &X.squared() * &v;
+        if chk != u {
+            X = &X * &FieldElement::I;
+        }
+
+        let chk = &X.squared() * &v;
+        if chk != u {
+            return Err(Error::PublicKeyBytesInvalid);
+        }
+
+        // I really don't get it. TweetNaCl checks for equality.
+        // If we do that, our tests fail. This way, tests pass.
+        if X.parity() != (self.0[31] >> 7) {
+            X = -&X;
+        }
+
+        let T = &X * &Y;
+        Ok(CurvePoint([X, Y, Z, T]))
+    }
+    // static int unpackneg(gf r[4],const u8 p[32]) {
+    //   // "load curve point"
+    //   gf t, chk, num, den, den2, den4, den6;
+    //   set25519(r[2],gf1);  // Z = "one"
+    //   unpack25519(r[1],p); // Y = compressed Y with x's sign bit erased
+    //   S(num,r[1]);
+    //   M(den,num,D);
+    //   Z(num,num,r[2]);
+    //   A(den,r[2],den); // set numerator, denominator as above
+
+    //   S(den2,den);
+    //   S(den4,den2);
+    //   M(den6,den4,den2);
+    //   M(t,den6,num);
+    //   M(t,t,den);  // set t = denominator**7 * numerator
+
+    //   pow2523(t,t);
+    //   M(t,t,num);
+    //   M(t,t,den);
+    //   M(t,t,den);
+    //   M(r[0],t,den); // X = sqrt(t)*num*den**3
+
+    //   S(chk,r[0]);
+    //   M(chk,chk,den);
+    //   if (neq25519(chk, num)) M(r[0],r[0],I);
+
+    //   S(chk,r[0]);
+    //   M(chk,chk,den);
+    //   if (neq25519(chk, num)) return -1;
+
+    //   if (par25519(r[0]) == (p[31]>>7)) Z(r[0],gf0,r[0]);
+
+    //   M(r[3],r[0],r[1]);
+    //   return 0;
+    // }
+}
 
 impl CurvePoint {
     pub fn basepoint() -> CurvePoint {
@@ -171,6 +270,9 @@ impl ConditionallySelectable for CurvePoint {
 }
 
 impl CompressedY {
+    pub fn as_bytes(&self) -> &[u8; 32] {
+        &self.0
+    }
     pub fn to_bytes(&self) -> [u8; 32] {
         self.0
     }

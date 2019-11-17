@@ -72,9 +72,22 @@
 ///
 /// This enum has a hidden member, to prevent exhaustively checking for errors.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[repr(C)]
 pub enum Error {
+    /// Never occurs, simplifies C bindings
+    NoError = 0,
+
+    /// Bytes do not correspond to a canonical base field element
+    NonCanonicalFieldElement,
+
+    /// Public key bytes invalid
+    PublicKeyBytesInvalid,
+
     /// Signature verification failed
     SignatureInvalid,
+
+    /// Context for prehashed signatures too long
+    ContextTooLong,
 
     #[doc(hidden)]
     _Extensible,
@@ -101,26 +114,5 @@ pub use curve::{CurvePoint, CompressedY};
 mod keys;
 pub use keys::{SecretKey, PublicKey, Keypair, Signature};
 
-
-// mod internal;
-
-// mod traits;
-
-// /// The base field Z mod 2^255 - 19
-// // #[cfg(feature = "cortex-m4")]
-// // pub mod field_haase as field;
-// // #[!cfg(feature = "cortex-m4")]
-// // pub mod field_tweetnacl as field;
-// pub mod field;
-// // pub mod field_haase;
-// /// The twisted Edwards curve
-// pub mod curve;
-// /// SHA-512
-// pub mod hash;
-// /// Ed25519 signatures
-// pub mod sign;
-
-// // pub mod field_common;
-
-// #[cfg(test)]
-// mod tests;
+/// C-compatible API, for cbindgen bindings
+pub mod capi;

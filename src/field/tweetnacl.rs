@@ -21,30 +21,6 @@ pub type Limbs = [i64; 16];
 #[derive(Clone,Copy,Debug,Default)]
 pub struct FieldElement(pub Limbs);
 
-///// constant-time swap of field elements
-//pub fn _conditional_swap(p: &mut FieldElement, q: &mut FieldElement, b: i64) {
-//    // TODO: change signature to `b: bool`?
-//    //
-//    // swap p and q iff b (is true)
-//    //
-//    // a) b = 0
-//    // --> mask = 0, t = 0, p and q remain as they were
-//    //
-//    // b) b = 1
-//    // --> mask = 0xFFFFFFFF, t = p[i]^q[i],
-//    // so p[i] <- p[i]^p[i]^q[i] = q[i] and similarly
-//    // q[i] <- p[i], so they swap
-//    //
-//    // see test_bit_fiddling below for "verification"
-
-//    let mask: i64 = !(b - 1);
-//    for (pi, qi) in p.0.iter_mut().zip(q.0.iter_mut()) {
-//        let t = mask & (*pi ^ *qi);
-//        *pi ^= t;
-//        *qi ^= t;
-//    }
-//}
-
 impl ConditionallySelectable for FieldElement {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
         let mut selection = Self::default();
@@ -89,6 +65,13 @@ impl FieldImplementation for FieldElement {
         0, 0, 0, 0,
     ]);
 
+    const D: Self = Self([
+        0x78a3, 0x1359, 0x4dca, 0x75eb,
+        0xd8ab, 0x4141, 0x0a4d, 0x0070,
+        0xe898, 0x7779, 0x4079, 0x8cc7,
+        0xfe73, 0x2b6f, 0x6cee, 0x5203,
+    ]);
+
     const D2: Self = Self([
         0xf159, 0x26b2, 0x9b94, 0xebd6,
         0xb156, 0x8283, 0x149a, 0x00e0,
@@ -108,6 +91,13 @@ impl FieldImplementation for FieldElement {
         0x6666, 0x6666, 0x6666, 0x6666,
         0x6666, 0x6666, 0x6666, 0x6666,
         0x6666, 0x6666, 0x6666, 0x6666,
+    ]);
+
+    const I: Self = Self([
+        0xa0b0, 0x4a0e, 0x1b27, 0xc4ee,
+        0xe478, 0xad2f, 0x1806, 0x2f43,
+        0xd7a7, 0x3dfb, 0x0099, 0x2b4d,
+        0xdf0b, 0x4fc1, 0x2480, 0x2b83,
     ]);
 
     // fn reduce(&mut self) {
@@ -157,13 +147,76 @@ impl FieldImplementation for FieldElement {
     fn from_bytes_unchecked(bytes: &[u8; 32]) -> FieldElement {
         let mut limbs = Limbs::default();
         for i in 0..16 {
-            limbs[i] = (bytes[2 * i] as i64) + (bytes[2 * i + 1] as i64) << 8;
+            limbs[i] = (bytes[2 * i] as i64) + ((bytes[2 * i + 1] as i64) << 8);
         }
 
         // some kind of safety check
+        // but: also clears the x-coordinate sign bit
         limbs[15] &= 0x7fff;
 
         FieldElement(limbs)
+    }
+
+    // sv inv25519(gf o,const gf i)
+    // {
+    //  // want: o = 1/i in base field
+    //   gf c;
+    //   int a;
+    //   FOR(a,16) c[a]=i[a];
+    //   // exponentiate with 2^255 - 21
+    //   // same as inversion by Fermat's little theorem
+    //   for(a=253;a>=0;a--) {
+    //     S(c,c);
+    //     if(a!=2&&a!=4) M(c,c,i);
+    //   }
+    //   FOR(a,16) o[a]=c[a];
+    // }
+    fn inverse(&self) -> FieldElement {
+        // TODO: possibly assert! that fe != 0?
+
+        // make our own private copy
+        let mut inverse = self.clone();
+
+        // exponentiate with 2**255 - 21,
+        // which by Fermat's little theorem is the same as inversion
+        for i in (0..=253).rev() {
+            inverse = inverse.squared();
+            if i != 2 && i != 4 {
+                inverse = &inverse * &self;
+            }
+        }
+
+        inverse
+    }
+
+    // sv pow2523(gf o,const gf i)
+    // // the naming here means "to the power of 2^252 - 3
+    // // again by Fermat's little theorem, this is the same
+    // // as taking the square root, which is needed for
+    // // point decompression
+    // {
+    //   gf c;
+    //   int a;
+    //   FOR(a,16) c[a]=i[a];
+    //   for(a=250;a>=0;a--) {
+    //     S(c,c);
+    //     if(a!=1) M(c,c,i);
+    //   }
+    //   FOR(a,16) o[a]=c[a];
+    // }
+    /// TODO: figure out why this doesn't pass the test at the end
+    fn possible_sqrt(&self) -> FieldElement {
+
+        let mut sqrt = self.clone();
+
+        for i in (0..=250).rev() {
+            sqrt = sqrt.squared();
+            if i != 1 {
+                sqrt = &sqrt * &self;
+            }
+        }
+
+        sqrt
     }
 }
 
@@ -175,6 +228,13 @@ impl ConstantTimeEq for FieldElement {
         canonical_self.ct_eq(&canonical_other)
     }
 }
+
+impl PartialEq for FieldElement {
+    fn eq(&self, other: &Self) -> bool {
+        bool::from(self.ct_eq(other))
+    }
+}
+
 
 impl<'a, 'b> Add<&'b FieldElement> for &'a FieldElement {
     type Output = FieldElement;
@@ -299,26 +359,6 @@ impl FieldElement {
         }
     }
 
-    pub fn inverse(&self) -> FieldElement {
-        // TODO: possibly assert! that fe != 0?
-
-        // make our own private copy
-        let mut inverse = self.clone();
-
-        // exponentiate with 2**255 - 21,
-        // which by Fermat's little theorem is the same as inversion
-        for i in (0..=253).rev() {
-            // inverse = square(&inverse); // eep...
-            // inverse = inverse.squared();
-            inverse = &inverse * &inverse;
-            if i != 2 && i != 4 {
-                inverse = &inverse * self;
-            }
-        }
-
-        inverse
-    }
-
 }
 
 #[cfg(test)]
@@ -375,16 +415,6 @@ mod tests {
     }
 
     #[test]
-    fn test_inversion() {
-        let d2 = FieldElement::D2;
-        let maybe_inverse = d2.inverse();
-
-        let product = &d2 * &maybe_inverse;
-        assert_eq!(product.to_bytes(), FieldElement::ONE.to_bytes());
-        assert!(bool::from(product.ct_eq(&FieldElement::ONE)));
-    }
-
-    #[test]
     fn test_negation() {
         let d2 = FieldElement::D2;
         let minus_d2 = -&d2;
@@ -392,4 +422,35 @@ mod tests {
 
         assert_eq!(FieldElement::ZERO.to_bytes(), maybe_zero.to_bytes());
     }
+
+    #[test]
+    fn test_inversion() {
+        let d2 = FieldElement::D2;
+        let maybe_inverse = d2.inverse();
+
+        let maybe_one = &d2 * &maybe_inverse;
+        assert_eq!(maybe_one.to_bytes(), FieldElement::ONE.to_bytes());
+        assert!(bool::from(maybe_one.ct_eq(&FieldElement::ONE)));
+        assert_eq!(maybe_one, FieldElement::ONE);
+    }
+
+    // #[test]
+    // fn test_possible_sqrt() {
+    //     let d2 = &FieldElement::ONE + &FieldElement::ONE;
+
+    //     let d2_sq = &d2 * &d2; // <-- certainly a square
+    //     let maybe_d2 = d2_sq.possible_sqrt();
+    //     // assert_eq!(d2, maybe_d2);
+    //     let maybe_d2_sq = &maybe_d2 * &maybe_d2;
+
+    //     // assert_eq!(&maybe_d2_sq - &d2_sq , FieldElement::ZERO);
+
+    //     assert_eq!(d2_sq.to_bytes(), maybe_d2_sq.to_bytes());
+
+    //     // let possible_sqrt_d2 = d2.possible_sqrt();
+    //     // let maybe_d2 = &possible_sqrt_d2 * &possible_sqrt_d2;
+
+    //     // assert_eq!(d2.to_bytes(), maybe_d2.to_bytes());
+    //     // assert!((d2 == maybe_d2) || (d2 == -&maybe_d2));
+    // }
 }

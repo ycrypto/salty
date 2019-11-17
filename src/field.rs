@@ -17,6 +17,11 @@ use subtle::{
     ConditionallySelectable,
 };
 
+use crate::{
+    Error,
+    Result,
+};
+
 /// Requirements on an implementation of the base field.
 ///
 /// There are *many* ways to implement field arithmetic in
@@ -29,9 +34,6 @@ use subtle::{
 /// - TweetNaCl: a transliteration of the TweetNaCl code to Rust
 /// - Haase: a fast implementation in assembly, due to Bjoern Haase
 /// - Schoolbook: our own attempt at a fast yet readable implementation
-///
-/// TODO: Want to implement PartialEq for all implementations of
-/// this trait, using `.to_bytes()` and `subtle::ConstantTimeEq`. How?
 ///
 /// TODO: Due to "coherence", we can't (I believe) implement, e.g.
 /// PartialEq in constant-time, using subtle::ConstantTimeEq and
@@ -52,6 +54,8 @@ where
     Self: ConditionallySelectable,
     for<'b> Self: ConstantTimeEq,
 
+    Self: PartialEq,
+
     for<'a, 'b> &'a Self: Add<&'b Self, Output = Self>,
     for<'b> Self: AddAssign<&'b Self>,
 
@@ -71,9 +75,11 @@ where
     // and demand functions returning &'static Self instead?
     const ZERO: Self;
     const ONE: Self;
+    const D: Self;
     const D2: Self;
     const BASEPOINT_X: Self;
     const BASEPOINT_Y: Self;
+    const I: Self;
 
     // /// swap p and q iff b is true, in constant time
     // // TODO: would be great to mark this with an attribute
@@ -94,13 +100,14 @@ where
     fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self;
 
     /// construct from canonical representation as little-endian bytes, with validity check
-    fn from_bytes(bytes: &[u8; 32]) -> Option<Self> {
+    fn from_bytes(bytes: &[u8; 32]) -> Result<Self> {
+        // TODO: convert this into a TryFrom
         let unchecked = Self::from_bytes_unchecked(bytes);
         let canonical_representation = unchecked.to_bytes();
         if bool::from(bytes.ct_eq(&canonical_representation)) {
-            Some(unchecked)
+            Ok(unchecked)
         } else {
-            None
+            Err(Error::NonCanonicalFieldElement)
         }
     }
 
@@ -110,15 +117,17 @@ where
         d[0] & 1
     }
 
-    // /// while potentially faster implementation of `&self * &self` may implemented
-    // /// by a specific type, we offer a default implementation
-    // fn squared(&self) -> Self {
-    //     self * self
-    // }
-}
+    /// default implementation, actual implementation may override
+    /// this with a faster version
+    fn squared(&self) -> Self {
+        self * self
+    }
 
-// impl PartialEq for FieldImplementation {
-// }
+    fn inverse(&self) -> FieldElement;
+    fn possible_sqrt(&self) -> FieldElement;
+
+
+}
 
 #[cfg(feature = "tweetnacl")]
 pub mod tweetnacl;

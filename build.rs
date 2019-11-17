@@ -1,3 +1,7 @@
+extern crate cbindgen;
+
+use std::env;
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // https://github.com/japaric/heapless/blob/531432b7/build.rs
     let target = std::env::var("TARGET")?;
@@ -37,5 +41,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .expect("Couldn't write bindings!");
     */
 
+    // C bindings
+    let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+
+    cbindgen::Builder::new()
+      .with_crate(crate_dir)
+      .generate()
+      .expect("Unable to generate bindings")
+      .write_to_file("salty.h");
     Ok(())
 }

@@ -7,6 +7,10 @@ build build-release:
 build-debug:
 	cargo build
 
+# this is also triggered in build.rs
+c-bindings:
+	cbindgen --config cbindgen.toml --output salty.h
+
 fmt:
 	cargo fmt
 
