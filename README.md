@@ -4,6 +4,7 @@
 [![Salty][crate-image]][crate-link]
 ![Apache 2.0 OR MIT licensed][license-image]
 [![Documentation][docs-image]][docs-link]
+[![Documentation (main)][docs-main-image]][docs-main-link]
 
 [build-image]: https://builds.sr.ht/~nickray/salty.svg
 [build-link]: https://builds.sr.ht/~nickray/salty
@@ -12,6 +13,8 @@
 [license-image]: https://img.shields.io/badge/license-Apache2.0%2FMIT-blue.svg
 [docs-image]: https://docs.rs/salty/badge.svg?style=flat-square
 [docs-link]: https://docs.rs/salty
+[docs-main-image]: https://img.shields.io/badge/docs-main-blue?style=flat-square
+[docs-main-link]: https://salty-main.netlify.com
 
 Small sweet Ed25519 for microcontrollers.  
 With optimizations for Cortex-M4.
