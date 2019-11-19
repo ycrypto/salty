@@ -1,6 +1,3 @@
-// #[cfg(feature = "c-api")]
-// extern crate cbindgen;
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("cargo:rerun-if-changed=build.rs");
@@ -48,25 +45,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n",
                 ), target);
 
-        println!("cargo:rerun-if-changed=haase/cortex_m4_mpy_fe25519.S");
-        println!("cargo:rerun-if-changed=haase/cortex_m4_sqr_fe25519.S");
-
-        cc::Build::new()
-            .file("haase/cortex_m4_mpy_fe25519.S")
-            .file("haase/cortex_m4_sqr_fe25519.S")
-            .compile("haase");
-
-        let bindings = bindgen::Builder::default()
-            .header("haase.h")
-            .use_core()
-            .ctypes_prefix("cty")
-            .generate()
-            .expect("Unable to generate bindings");
-
         let out_path = std::path::PathBuf::from(std::env::var("OUT_DIR").unwrap());
-        bindings
-            .write_to_file(out_path.join("haase.rs"))
-            .expect("Couldn't write bindings!");
+        std::fs::copy("bin/salty-asm.a", out_path.join("libsalty-asm.a")).unwrap();
+
+        println!("cargo:rustc-link-lib=static={}", "salty-asm");
+        println!("cargo:rustc-link-search={}", out_path.display());
+
+        println!("cargo:rerun-if-changed=bin/salty-asm.a");
     }
 
     #[cfg(feature = "c-api")] {

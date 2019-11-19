@@ -16,8 +16,8 @@
 [docs-main-image]: https://img.shields.io/badge/docs-main-blue?style=flat-square
 [docs-main-link]: https://salty-main.netlify.com
 
-Small sweet Ed25519 for microcontrollers.  
-With optimizations for Cortex-M4.
+Small, sweet, swift Ed25519 signatures for microcontrollers.  
+With optimizations for Cortex-M4 and Cortex-M33.
 
 **NOTE: This is work-in-progress and not fit for use!**
 

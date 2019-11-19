@@ -56,11 +56,15 @@
 //! - add the authenticated encryption part of NaCl
 //! - add more lightweight cryptography as alternative
 //!
-//! Current numbers on an NXP LPC55S69 running at 96Mhz:
+//! Current numbers on an NXP LPC55S69 running at 96Mhz, with "tweetnacl" feature:
 //! - signing prehashed message: 52,632,954 cycles
 //! - verifying said message: 100,102,158 cycles
 //! - code size for this: 19,724 bytes
 //! Obviously, this needs to improve :))
+//!
+//! Current numbers on an NXP LPC55S69 running at 96Mhz, with "haase" feature:
+//! - signing prehashed message: 8,547,161 cycles
+//! - verifying said message: 16,046,465 cycles
 //!
 //! [tweetnacl]: https://tweetnacl.cr.yp.to/
 //! [ed25519-dalek]: https://lib.rs/crates/ed25519-dalek
@@ -96,8 +100,11 @@ pub enum Error {
 /// Result type for all `salty` operations.
 pub type Result<T = ()> = core::result::Result<T, Error>;
 
-#[cfg(not(feature = "field-implementation"))]
-compile_error!("Please select one of the available field implementation features:
+#[cfg(any(
+    not(feature = "field-implementation"),
+    all(feature = "tweetnacl", feature = "haase")
+))]
+compile_error!("Please select exactly one of the available field implementation features:
   - tweetnacl
   - haase");
 
