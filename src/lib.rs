@@ -109,6 +109,7 @@ pub use hash::Sha512;
 
 /// Implementation of underlying curve base field arithmetic
 mod field;
+pub use field::{FieldElement, FieldImplementation};
 
 mod scalar;
 pub use scalar::Scalar;

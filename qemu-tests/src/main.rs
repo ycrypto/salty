@@ -5,6 +5,13 @@ extern crate panic_semihosting;
 use cortex_m_rt::entry;
 use cortex_m_semihosting::{debug, hprintln};
 
+use salty::{
+    FieldElement,
+    FieldImplementation,
+};
+
+use subtle::ConstantTimeEq;
+
 fn test_empty_hash() {
     let empty_hash = salty::Sha512::new().updated(&[]).finalize();
     #[rustfmt::skip]
@@ -21,6 +28,29 @@ fn test_empty_hash() {
     assert_eq!(empty_hash[..16], expected[..16]);
 }
 
+fn test_arithmetic() {
+
+    let one = FieldElement::ONE;
+    let two = &one + &one;
+    let three = &two + &one;
+
+    let two_times_three = &two * &three;
+    // no multiplications, just sum up ONEs
+    let six = (1..=6).fold(FieldElement::ZERO, |partial_sum, _| &partial_sum + &FieldElement::ONE);
+
+    assert_eq!(two_times_three.to_bytes(), six.to_bytes());
+    assert!(bool::from(two_times_three.ct_eq(&six)));
+}
+
+fn test_negation() {
+    let d2 = FieldElement::D2;
+    let minus_d2 = -&d2;
+    let maybe_zero = &d2 + &minus_d2;
+
+    assert_eq!(FieldElement::ZERO.to_bytes(), maybe_zero.to_bytes());
+}
+
+#[allow(dead_code)]
 fn test_signature() {
     #![allow(non_snake_case)]
 
@@ -66,7 +96,9 @@ fn test_signature() {
 fn main() -> ! {
 
     test_empty_hash();
-    test_signature();
+    test_arithmetic();
+    test_negation();
+    // test_signature();
 
     hprintln!("Tests passed!").ok();
 

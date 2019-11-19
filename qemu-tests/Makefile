@@ -1,6 +1,12 @@
 # IMPL = tweetnacl
 IMPL = haase
 
+test:
+	cargo run --features tweetnacl
+	cargo run --features tweetnacl --release
+	cargo run --features haase
+	cargo run --features haase --release
+
 build:
 	cargo build --features $(IMPL)
 
