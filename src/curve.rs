@@ -149,10 +149,10 @@ impl CurvePoint {
 
     pub fn neutral_element() -> CurvePoint {
         CurvePoint([
-            crate::field::tweetnacl::FieldElement::ZERO,
-            crate::field::tweetnacl::FieldElement::ONE,
-            crate::field::tweetnacl::FieldElement::ONE,
-            crate::field::tweetnacl::FieldElement::ZERO,
+            FieldElement::ZERO,
+            FieldElement::ONE,
+            FieldElement::ONE,
+            FieldElement::ZERO,
         ])
     }
 

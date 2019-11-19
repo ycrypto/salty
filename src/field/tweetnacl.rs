@@ -25,9 +25,6 @@ impl ConditionallySelectable for FieldElement {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
         let mut selection = Self::default();
         for i in 0..16 {
-        // for (r, (ai, bi)) in r.0.ia.0.iter_mut().zip(b.0.iter_mut()) {
-        //     i64::conditional_select(ai, bi, choice);
-        // }
             selection.0[i] = i64::conditional_select(&a.0[i], &b.0[i], choice);
         }
         selection

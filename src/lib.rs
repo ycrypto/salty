@@ -96,6 +96,11 @@ pub enum Error {
 /// Result type for all `salty` operations.
 pub type Result<T = ()> = core::result::Result<T, Error>;
 
+#[cfg(not(feature = "field-implementation"))]
+compile_error!("Please select one of the available field implementation features:
+  - tweetnacl
+  - haase");
+
 pub mod constants;
 
 /// Self-contained implementation of SHA512

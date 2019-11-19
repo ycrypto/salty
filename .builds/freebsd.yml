@@ -12,7 +12,7 @@ tasks:
 - build: |
     cd salty
     source $HOME/.cargo/env
-    cargo build --target thumbv7em-none-eabihf --release
+    RUSTFLAGS="-D warnings" cargo build --target thumbv7em-none-eabihf --release
 - test: |
     cd salty
     source $HOME/.cargo/env
