@@ -1,13 +1,9 @@
 MEMORY
 {
-  /* The following works, but is not perfect */
 
+  /* musca-b1 does not seem to start in secure mode, */
+  /* can't use 0x0 FLASH here                        */
   FLASH : ORIGIN = 0x10000000, LENGTH = 128K
-  /* RAM : ORIGIN = 0x0a400000, LENGTH = 128K */
-  RAM :   ORIGIN = 0x20000000, LENGTH = 32K /*128K*/
+  RAM :   ORIGIN = 0x30000000, LENGTH = 32K /* 128K */
 
-  /* SRAM0 : ORIGIN = 0x0a400000, LENGTH = 128K */
-  /* SRAM1 : ORIGIN = 0x0a420000, LENGTH = 128K */
-  /* SRAM2 : ORIGIN = 0x0a440000, LENGTH = 128K */
-  /* SRAM3 : ORIGIN = 0x0a460000, LENGTH = 128K */
 }

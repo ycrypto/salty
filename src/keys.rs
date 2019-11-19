@@ -49,6 +49,7 @@ pub struct Keypair {
 
 /// a signature: pair consisting of a curve point "R" in
 /// compressed form and a scalar "s".
+#[derive(Debug,Default)]
 pub struct Signature {
     pub r: CompressedY,
     pub s: Scalar,

@@ -248,7 +248,7 @@ impl<'a, 'b> Sub<&'b FieldElement> for &'a FieldElement {
         difference[7] = (accu as u32) | 0x8000_0000;
         // to compensate for setting bit 31, need to subtract
         // "-1" here
-        accu = ((((accu >> 31) as u32) - 1) * 19) as i64;
+        accu = ((((accu >> 31) as i32) - 1) * 19) as i64;
 
         for i in 0..7 {
             accu += self.0[i] as i64;

@@ -1,11 +1,19 @@
 # IMPL = tweetnacl
 IMPL = haase
 
-test:
-	cargo run --features tweetnacl
-	cargo run --features tweetnacl --release
-	cargo run --features haase
+main-test:
 	cargo run --features haase --release
+
+test:
+	@echo "\nTesting Haase field implementation, debug build\n"
+	time cargo run --features haase
+	@echo "\nTesting Haase field implementation, release build\n"
+	time cargo run --features haase --release
+	@echo "\nTesting TweetNaCl field implementation, debug build"
+	@echo "Patience please, this is veeery slow :)\n"
+	time cargo run --features tweetnacl
+	@echo "\nTesting TweetNaCl field implementation, release build\n"
+	time cargo run --features tweetnacl --release
 
 build:
 	cargo build --features $(IMPL)
@@ -36,10 +44,10 @@ MACHINE = musca-b1
 QEMU = ../../qemu/arm-softmmu/qemu-system-arm
 # QEMU_DEBUG = -d in_asm,int,exec,cpu,guest_errors,unimp
 
-qemu: build
+qemu: #build
 	$(QEMU) -cpu $(CPU) -machine $(MACHINE) -nographic $(SEMIHOSTING) -kernel $(KERNEL) $(QEMU_DEBUG)
 
-qemu-gdb: build
+qemu-gdb: #build
 	# Exit with <Ctrl-A X>
 	$(QEMU) -cpu $(CPU) -machine $(MACHINE) -nographic $(SEMIHOSTING) -kernel $(KERNEL) -gdb tcp::1234 -S $(QEMU_DEBUG)
 

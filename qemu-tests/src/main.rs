@@ -2,6 +2,7 @@
 #![no_main]
 
 extern crate panic_semihosting;
+// use cortex_m::peripheral::{DWT, Peripherals};
 use cortex_m_rt::entry;
 use cortex_m_semihosting::{debug, hprintln};
 
@@ -10,7 +11,11 @@ use salty::{
     FieldImplementation,
 };
 
-use subtle::ConstantTimeEq;
+// use subtle::ConstantTimeEq;
+
+// pub fn get_cycle_count() -> u32 {
+//     unsafe { (*DWT::ptr()).cyccnt.read() }
+// }
 
 fn test_empty_hash() {
     let empty_hash = salty::Sha512::new().updated(&[]).finalize();
@@ -34,20 +39,34 @@ fn test_arithmetic() {
     let two = &one + &one;
     let three = &two + &one;
 
-    let two_times_three = &two * &three;
+    let mut raw_six = FieldElement::default();
+    raw_six.0[0] = 6;
+
     // no multiplications, just sum up ONEs
     let six = (1..=6).fold(FieldElement::ZERO, |partial_sum, _| &partial_sum + &FieldElement::ONE);
 
+    assert_eq!(raw_six.to_bytes(), six.to_bytes());
+
+    let two_times_three = &two * &three;
     assert_eq!(two_times_three.to_bytes(), six.to_bytes());
-    assert!(bool::from(two_times_three.ct_eq(&six)));
 }
 
+#[allow(dead_code)]
 fn test_negation() {
     let d2 = FieldElement::D2;
     let minus_d2 = -&d2;
     let maybe_zero = &d2 + &minus_d2;
 
     assert_eq!(FieldElement::ZERO.to_bytes(), maybe_zero.to_bytes());
+}
+
+#[allow(dead_code)]
+fn test_inversion() {
+    let d2 = FieldElement::D2;
+    let maybe_inverse = d2.inverse();
+    let maybe_one = &d2 * &maybe_inverse;
+
+    assert_eq!(maybe_one, FieldElement::ONE);
 }
 
 #[allow(dead_code)]
@@ -80,7 +99,10 @@ fn test_signature() {
     ];
 
     // sign
+    // let before = get_cycle_count();
     let signature = keypair.sign(&data);
+    // let after = get_cycle_count();
+    // hprintln!("keypair.sign took {} cycles", after - before).ok();
 
     // check signature is as expected
     assert_eq!(signature.r.to_bytes(), R_expected);
@@ -92,13 +114,58 @@ fn test_signature() {
     assert!(verification.is_ok());
 }
 
+fn test_ed25519ph_with_rfc_8032_test_vector() {
+    let seed: [u8; 32] = [
+        0x83, 0x3f, 0xe6, 0x24, 0x09, 0x23, 0x7b, 0x9d,
+        0x62, 0xec, 0x77, 0x58, 0x75, 0x20, 0x91, 0x1e,
+        0x9a, 0x75, 0x9c, 0xec, 0x1d, 0x19, 0x75, 0x5b,
+        0x7d, 0xa9, 0x01, 0xb9, 0x6d, 0xca, 0x3d, 0x42,
+    ];
+
+    let keypair = salty::Keypair::from(&seed);
+
+    let message: [u8; 3] = [0x61, 0x62, 0x63];
+
+    let prehashed_message = salty::Sha512::new().updated(&message).finalize();
+
+    let signature = keypair.sign_prehashed(&prehashed_message, None);
+    hprintln!("{:x?}", &signature).ok();
+
+    let expected_r = [
+        0x98, 0xa7, 0x02, 0x22, 0xf0, 0xb8, 0x12, 0x1a,
+        0xa9, 0xd3, 0x0f, 0x81, 0x3d, 0x68, 0x3f, 0x80,
+        0x9e, 0x46, 0x2b, 0x46, 0x9c, 0x7f, 0xf8, 0x76,
+        0x39, 0x49, 0x9b, 0xb9, 0x4e, 0x6d, 0xae, 0x41,
+    ];
+
+    let expected_s = [
+        0x31, 0xf8, 0x50, 0x42, 0x46, 0x3c, 0x2a, 0x35,
+        0x5a, 0x20, 0x03, 0xd0, 0x62, 0xad, 0xf5, 0xaa,
+        0xa1, 0x0b, 0x8c, 0x61, 0xe6, 0x36, 0x06, 0x2a,
+        0xaa, 0xd1, 0x1c, 0x2a, 0x26, 0x08, 0x34, 0x06,
+    ];
+
+    assert_eq!(signature.r.0, expected_r);
+    assert_eq!(signature.s.0, expected_s);
+
+    let public_key = keypair.public;
+    let verification = public_key.verify_prehashed(&prehashed_message, &signature, None);
+    assert!(verification.is_ok());
+}
+
 #[entry]
 fn main() -> ! {
+
+    // let mut peripherals = Peripherals::take().unwrap();
+    // peripherals.DWT.enable_cycle_counter();
+    // hprintln!("enabled cycle counter").ok();
 
     test_empty_hash();
     test_arithmetic();
     test_negation();
-    // test_signature();
+    test_inversion();
+    test_signature();
+    test_ed25519ph_with_rfc_8032_test_vector();
 
     hprintln!("Tests passed!").ok();
 
