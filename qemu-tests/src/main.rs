@@ -1,15 +1,12 @@
 #![no_std]
 #![no_main]
 
-// extern crate panic_halt;
-// extern crate panic_abort;
 extern crate panic_semihosting;
 use cortex_m_rt::entry;
 use cortex_m_semihosting::{debug, hprintln};
 
 fn test_empty_hash() {
-    let mut empty_hash = [0u8; 64];
-    salty::hash::sha512(&mut empty_hash, &[]);
+    let empty_hash = salty::Sha512::new().updated(&[]).finalize();
     #[rustfmt::skip]
     let expected: [u8; 64] = [
         0xcf, 0x83, 0xe1, 0x35, 0x7e, 0xef, 0xb8, 0xbd,
@@ -27,15 +24,14 @@ fn test_empty_hash() {
 fn test_signature() {
     #![allow(non_snake_case)]
 
-    use salty::sign;
-    let seed: sign::SeedBuffer = [
+    let seed: [u8; 32] = [
         0x35, 0xb3, 0x07, 0x76, 0x17, 0x9a, 0x78, 0x58,
         0x34, 0xf0, 0x4c, 0x82, 0x88, 0x59, 0x5d, 0xf4,
         0xac, 0xa1, 0x0b, 0x33, 0xaa, 0x12, 0x10, 0xad,
         0xec, 0x3e, 0x82, 0x47, 0x25, 0x3e, 0x6c, 0x65,
     ];
 
-    let secret_key = sign::generate_key(&sign::Seed(seed));
+    let keypair = salty::Keypair::from(&seed);
 
     let data = "salty!".as_bytes();
 
@@ -53,26 +49,29 @@ fn test_signature() {
         0x32, 0xf9, 0xa6, 0x44, 0x2a, 0x17, 0xbc, 0x09,
     ];
 
-    let (R, S) = sign::sign(&secret_key, &data);
+    // sign
+    let signature = keypair.sign(&data);
 
-    assert_eq!(R, R_expected);
-    assert_eq!(S, S_expected);
+    // check signature is as expected
+    assert_eq!(signature.r.to_bytes(), R_expected);
+    assert_eq!(signature.s.to_bytes(), S_expected);
+
+    // verify signature
+    let public_key = keypair.public;
+    let verification = public_key.verify(&data, &signature);
+    assert!(verification.is_ok());
 }
 
 #[entry]
 fn main() -> ! {
-    // let cp = cortex_m::Peripherals::take().unwrap();
-    // let _ = cp.NVIC;
 
     test_empty_hash();
     test_signature();
 
-    hprintln!("Tests passed!").unwrap();
+    hprintln!("Tests passed!").ok();
 
     debug::exit(debug::EXIT_SUCCESS);
 
-    loop {
-        cortex_m::asm::wfi();
-        // cortex_m::asm::nop();
-    }
+    loop { continue; }
+
 }

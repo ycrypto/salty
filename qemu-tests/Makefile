@@ -1,12 +1,30 @@
-.PHONY: build run
+# IMPL = tweetnacl
+IMPL = haase
+
 build:
-	cargo build
+	cargo build --features $(IMPL)
+
+size: build
+	arm-none-eabi-size $(KERNEL)
+
+build-release:
+	cargo build --features $(IMPL) --release
+
+size-release: build-release
+	arm-none-eabi-size $(KERNEL_RELEASE)
+	arm-none-eabi-size $(KERNEL_RELEASE) -A
 
 run:
-	cargo run
+	cargo run --features $(IMPL)
+
+run-release:
+	# cargo size --features $(IMPL) --release
+	arm-none-eabi-size $(KERNEL_RELEASE)
+	cargo run --features $(IMPL) --release
 
 SEMIHOSTING = -semihosting-config enable=on,target=native
 KERNEL = target/thumbv8m.main-none-eabi/debug/qemu-tests
+KERNEL_RELEASE = target/thumbv8m.main-none-eabi/release/qemu-tests
 CPU = cortex-m33
 MACHINE = musca-b1
 QEMU = ../../qemu/arm-softmmu/qemu-system-arm

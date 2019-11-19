@@ -27,7 +27,7 @@ pub type fe25519 = [u32; 8];
 
 extern "C" {
     pub fn fe25519_mul_asm(pResult: *mut fe25519, pVal1: *const fe25519, pVal2: *const fe25519);
-    pub fn fe25519_sqr_asm(pResult: *mut fe25519, pVal1: *const fe25519);
+    pub fn fe25519_square_asm(pResult: *mut fe25519, pVal1: *const fe25519);
 }
 
 
@@ -142,7 +142,7 @@ impl FieldImplementation for FieldElement {
     fn squared(&self) -> FieldElement {
         let mut square = U256::default();
 
-        unsafe { fe25519_sqr_asm(&mut square, &self.0); }
+        unsafe { fe25519_square_asm(&mut square, &self.0); }
         FieldElement(square)
     }
 

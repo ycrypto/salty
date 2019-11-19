@@ -6,16 +6,15 @@ edition = "2018"
 description = "Test salty using QEMU musca-b1"
 license = "Apache-2.0 OR MIT"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-cortex-m = "0.6.0"
+cortex-m = "0.6.1"
 cortex-m-rt = "0.6.10"
-# cortex-m-rt = { path = "../../cortex-m-rt" }
-# panic-halt = "0.2.0"
-cortex-m-semihosting = "0.3.3"
-# panic-abort = "0.3.1"
-panic-semihosting = "0.5.2"
+cortex-m-semihosting = "0.3.5"
+panic-semihosting = { version = "0.5.3", features = ["exit"] }
 
 [dependencies.salty]
 path = ".."
+
+[features]
+tweetnacl = ["salty/tweetnacl"]
+haase = ["salty/haase"]
