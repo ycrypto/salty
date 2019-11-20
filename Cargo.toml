@@ -12,13 +12,7 @@ keywords = ["no-std", "NaCl", "cryptography", "signatures"]
 [dependencies]
 subtle = { version = "2.2", default-features = false }
 
-[build-dependencies]
-cbindgen = { version = "0.9", optional = true }
-
-[dev-dependencies]
-
 [features]
 field-implementation = []
 tweetnacl = ["field-implementation"]
 haase = ["field-implementation"]
-c-api =["cbindgen"]

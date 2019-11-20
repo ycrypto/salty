@@ -38,7 +38,7 @@ pub struct SecretKey {
 pub struct PublicKey {
     #[allow(dead_code)]
     pub(crate) point: CurvePoint,
-    pub(crate) compressed: CompressedY,
+    pub compressed: CompressedY,
 }
 
 /// pair of secret and corresponding public keys

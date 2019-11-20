@@ -7,12 +7,15 @@ packages:
 sources:
 - https://github.com/nickray/salty
 shell: false
+
 tasks:
+
 - setup: |
     curl -sSf https://sh.rustup.rs | sh -s -- -y -q
     source $HOME/.cargo/env
     rustup target add thumbv7em-none-eabi
     rustup target add thumbv8m.main-none-eabi
+
 - build-tweetnacl: |
     cd salty
     source $HOME/.cargo/env
@@ -21,16 +24,22 @@ tasks:
     cd salty
     source $HOME/.cargo/env
     RUSTFLAGS="-D warnings" cargo build --target thumbv7em-none-eabi --release --features haase
+
 - test-assemble: |
     cd salty
     mv bin/salty-asm.a distributed-salty-asm.a
     scripts/assemble.sh
     diff bin/salty-asm.a distributed-salty-asm.a
-- test: |
+
+- test-tweetnacl: |
     cd salty
     source $HOME/.cargo/env
     cargo test --release --features tweetnacl
-- test-qemu: |
+- test-haase: |
     cd salty/qemu-tests
     source $HOME/.cargo/env
     make main-test
+- test-c-api: |
+    cd salty/c-api
+    source $HOME/.cargo/env
+    make

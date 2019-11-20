@@ -71,6 +71,8 @@
 //! [dalek]: https://dalek.rs/
 //! [rfc-8032]: https://tools.ietf.org/html/rfc8032/
 
+// #[cfg(feature = "extern-panic-halt")]
+// extern crate panic_halt;
 
 /// Extensible error type for all `salty` operations.
 ///
@@ -126,6 +128,3 @@ pub use curve::{CurvePoint, CompressedY};
 
 mod keys;
 pub use keys::{SecretKey, PublicKey, Keypair, Signature};
-
-/// C-compatible API, for cbindgen bindings
-pub mod capi;

@@ -9,23 +9,14 @@
 #include <stdlib.h>
 
 #define salty_COMPRESSED_Y_LENGTH 32
-
 #define salty_PUBLICKEY_SERIALIZED_LENGTH 32
-
 #define salty_SCALAR_LENGTH 32
-
 #define salty_SECRETKEY_NONCE_LENGTH 32
-
 #define salty_SECRETKEY_SCALAR_LENGTH 32
-
 #define salty_SECRETKEY_SEED_LENGTH 32
-
 #define salty_SECRETKEY_SERIALIZED_LENGTH 32
-
 #define salty_SHA256_LENGTH 64
-
 #define salty_SHA512_LENGTH 64
-
 #define salty_SIGNATURE_SERIALIZED_LENGTH 64
 
 /**

@@ -9,23 +9,14 @@
 #include <new>
 
 static const uintptr_t salty_COMPRESSED_Y_LENGTH = 32;
-
 static const uintptr_t salty_PUBLICKEY_SERIALIZED_LENGTH = 32;
-
 static const uintptr_t salty_SCALAR_LENGTH = 32;
-
 static const uintptr_t salty_SECRETKEY_NONCE_LENGTH = 32;
-
 static const uintptr_t salty_SECRETKEY_SCALAR_LENGTH = 32;
-
 static const uintptr_t salty_SECRETKEY_SEED_LENGTH = 32;
-
 static const uintptr_t salty_SECRETKEY_SERIALIZED_LENGTH = 32;
-
 static const uintptr_t salty_SHA256_LENGTH = 64;
-
 static const uintptr_t salty_SHA512_LENGTH = 64;
-
 static const uintptr_t salty_SIGNATURE_SERIALIZED_LENGTH = 64;
 
 /// Extensible error type for all `salty` operations.
