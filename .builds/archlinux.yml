@@ -14,6 +14,7 @@ tasks:
     curl -sSf https://sh.rustup.rs | sh -s -- -y -q
     source $HOME/.cargo/env
     rustup target add thumbv7em-none-eabi
+    rustup target add thumbv7em-none-eabihf
     rustup target add thumbv8m.main-none-eabi
 
 - build-tweetnacl: |

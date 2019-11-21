@@ -1,10 +1,45 @@
-# Salty
+<h1 align="center">salty</h1>
+<div align="center">
+ <strong>
+   Ed25519 signatures for microcontrollers
+ </strong>
+</div>
+
+<br />
+
+<div align="center">
+  <!-- Crates version -->
+  <a href="https://crates.io/crates/salty">
+    <img src="https://img.shields.io/crates/v/salty.svg?style=flat-square"
+    alt="Crates.io version" />
+  </a>
+  <!-- Downloads -->
+  <a href="https://crates.io/crates/salty">
+    <img src="https://img.shields.io/crates/d/salty.svg?style=flat-square"
+      alt="Download" />
+  </a>
+  <!-- docs.rs docs -->
+  <a href="https://salty-main.netlify.com">
+    <img src="https://img.shields.io/badge/docs-main_branch-blue.svg?style=flat-square"
+      alt="docs.rs docs" />
+  </a>
+</div>
+
+<div align="center">
+  <h3>
+    <a href="https://docs.rs/salty">
+      API Docs
+    </a>
+    <span> | </span>
+    <a href="https://github.com/nickray/salty/blob/main/.github/CONTRIBUTING.md">
+      Contributing
+    </a>
+  </h3>
+</div>
+
+## Overview
 
 [![Build Status][build-image]][build-link] 
-[![Salty][crate-image]][crate-link]
-![Apache 2.0 OR MIT licensed][license-image]
-[![Documentation][docs-image]][docs-link]
-[![Documentation (main)][docs-main-image]][docs-main-link]
 
 [build-image]: https://builds.sr.ht/~nickray/salty.svg
 [build-link]: https://builds.sr.ht/~nickray/salty
@@ -16,10 +51,10 @@
 [docs-main-image]: https://img.shields.io/badge/docs-main-blue?style=flat-square
 [docs-main-link]: https://salty-main.netlify.com
 
-Small, sweet, swift Ed25519 signatures for microcontrollers.  
+Small, sweet, swift: Ed25519 signatures for microcontrollers.  
 With optimizations for Cortex-M4 and Cortex-M33.
 
-**NOTE: This is work-in-progress and not fit for use!**
+**NOTE: This is work-in-progress and not fit for use! The usual warnings apply: Your hamster will explode, etc. etc.**
 
 ## Goals
 
