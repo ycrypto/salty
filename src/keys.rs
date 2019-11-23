@@ -35,6 +35,7 @@ pub struct SecretKey {
 /// a public key, consisting internally of both its defining
 /// point (the secret scalar times the curve base point)
 /// and the compression of that point.
+#[derive(Debug,Default,PartialEq)]
 pub struct PublicKey {
     #[allow(dead_code)]
     pub(crate) point: CurvePoint,
@@ -49,7 +50,7 @@ pub struct Keypair {
 
 /// a signature: pair consisting of a curve point "R" in
 /// compressed form and a scalar "s".
-#[derive(Debug,Default)]
+#[derive(Debug,Default,PartialEq)]
 pub struct Signature {
     pub r: CompressedY,
     pub s: Scalar,
@@ -92,7 +93,49 @@ impl Keypair {
         Signature { r: R, s }
     }
 
-    pub fn sign_prehashed(&self, prehashed_message: &[u8; SHA512_LENGTH], context: Option<&'static [u8]>)
+    pub fn sign_with_context(&self, message: &[u8], context: &[u8])
+    -> Signature {
+        // By default, the context is an empty string.
+        debug_assert!(context.len() <= 255, "The context must not be longer than 255 octets.");
+
+        let first_hash = Sha512::new()
+            // Ed25519ph parts
+            .updated(b"SigEd25519 no Ed25519 collisions")
+            .updated(&[0])
+            // context parts
+            .updated(&[context.len() as u8])
+            .updated(context)
+            // usual parts
+            .updated(&self.secret.nonce)
+            .updated(message)
+            .finalize();
+
+        // from here on, same as normal signing
+        let r: Scalar = Scalar::from_u512_le(&first_hash);
+        #[allow(non_snake_case)]
+        let R: CompressedY = (&r * &CurvePoint::basepoint()).compressed();
+
+        let second_hash = Sha512::new()
+            // Ed25519ph parts
+            .updated(b"SigEd25519 no Ed25519 collisions")
+            .updated(&[0])
+            // context parts
+            .updated(&[context.len() as u8])
+            .updated(context)
+            // usual parts
+            .updated(&R.0)
+            .updated(&self.public.compressed.0)
+            .updated(message)
+            .finalize();
+
+        let h: Scalar = Scalar::from_u512_le(&second_hash);
+        let mut s = &r.into() + &(&h.into() * &TweetNaclScalar::from(&self.secret.scalar));
+        let s = s.reduce_modulo_ell();
+
+        Signature { r: R, s }
+    }
+
+    pub fn sign_prehashed(&self, prehashed_message: &[u8; SHA512_LENGTH], context: Option<&[u8]>)
     -> Signature {
         // By default, the context is an empty string.
         let context: &[u8] = context.unwrap_or(b"");
@@ -280,7 +323,7 @@ impl Signature {
 
 #[cfg(test)]
 mod tests {
-
+    use hex_literal::hex;
     use super::Keypair;
     use crate::hash::Sha512;
 
@@ -295,12 +338,14 @@ mod tests {
         //     0xec, 0x3e, 0x82, 0x47, 0x25, 0x3e, 0x6c, 0x65,
         // ];
 
-        let mut seed: [u8; 32] = [
-            0x35, 0xb0, 0x07, 0x76, 0x17, 0x9a, 0x78, 0x50,
-            0x34, 0xff, 0x4c, 0x82, 0x88, 0x00, 0x5d, 0xf4,
-            0xac, 0xaf, 0x0b, 0x33, 0xaa, 0x12, 0x10, 0xad,
-            0xec, 0x30, 0x82, 0x47, 0x25, 0x3e, 0x6c, 0x65,
-        ];
+        // let mut seed: [u8; 32] = [
+        //     0x35, 0xb0, 0x07, 0x76, 0x17, 0x9a, 0x78, 0x50,
+        //     0x34, 0xff, 0x4c, 0x82, 0x88, 0x00, 0x5d, 0xf4,
+        //     0xac, 0xaf, 0x0b, 0x33, 0xaa, 0x12, 0x10, 0xad,
+        //     0xec, 0x30, 0x82, 0x47, 0x25, 0x3e, 0x6c, 0x65,
+        // ];
+        let mut seed: [u8; 32] = hex!(
+            "35b00776179a785034ff4c8288005df4acaf0b33aa1210adec308247253e6c65");
 
         for i in 0..=255 {
             seed[0] = i;

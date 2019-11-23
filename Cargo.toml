@@ -12,6 +12,9 @@ keywords = ["no-std", "NaCl", "cryptography", "signatures"]
 [dependencies]
 subtle = { version = "2.2", default-features = false }
 
+[dev-dependencies]
+hex-literal = "0.2.1"
+
 [features]
 field-implementation = []
 tweetnacl = ["field-implementation"]

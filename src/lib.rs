@@ -74,6 +74,8 @@
 // #[cfg(feature = "extern-panic-halt")]
 // extern crate panic_halt;
 
+// use hex_literal::hex;
+
 /// Extensible error type for all `salty` operations.
 ///
 /// This enum has a hidden member, to prevent exhaustively checking for errors.

@@ -14,7 +14,7 @@ pub type U512le = [u8; 64];
 /// structure, consisting of these scalars. They are the
 /// integers modulo "ell", where "ell" is 2**252 + something something.
 #[repr(C)]
-#[derive(Debug,Default)]
+#[derive(Debug,Default,PartialEq)]
 pub struct Scalar(
     pub [u8; SCALAR_LENGTH]
 );
