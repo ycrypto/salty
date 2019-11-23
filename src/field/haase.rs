@@ -110,21 +110,8 @@ impl FieldImplementation for FieldElement {
     }
 
     fn inverse(&self) -> FieldElement {
-        // let mut r: U256;
-        // let mut t0: U256;
-        // let mut t1: U256;
-        // let mut t2: U256;
+        // TODO: replace by Haase's version in `fe25519_invert.c`
 
-        // let mut z11 = &r;
-        // let mut z2_10_0 = &t1;
-        // let mut z2_50_0 = &t1;
-        // let mut z2_100_0 = z2_10_0;
-
-        // let i: u8;
-
-        // z2 =
-
-        // TODO: replace by Haase's version
         let mut inverse = self.clone();
 
         // exponentiate with 2**255 - 21,
@@ -146,9 +133,8 @@ impl FieldImplementation for FieldElement {
         FieldElement(square)
     }
 
-    fn possible_sqrt(&self) -> FieldElement {
-
-        // TODO: replace by Haase's version
+    fn pow2523(&self) -> FieldElement {
+        // TODO: replace by Haase's version in `fe25519_pow2523.c`
 
         let mut sqrt = self.clone();
 

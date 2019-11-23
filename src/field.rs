@@ -123,9 +123,8 @@ where
         self * self
     }
 
-    fn inverse(&self) -> FieldElement;
-    fn possible_sqrt(&self) -> FieldElement;
-
+    fn inverse(&self) -> Self;
+    fn pow2523(&self) -> Self;
 
 }
 

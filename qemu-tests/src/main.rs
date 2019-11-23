@@ -417,7 +417,7 @@ fn test_ed25519ph_with_rfc_8032_test_vector() {
     let prehashed_message = salty::Sha512::new().updated(&message).finalize();
 
     let signature = keypair.sign_prehashed(&prehashed_message, None);
-    hprintln!("{:x?}", &signature).ok();
+    // hprintln!("{:x?}", &signature).ok();
 
     let expected_r = [
         0x98, 0xa7, 0x02, 0x22, 0xf0, 0xb8, 0x12, 0x1a,
@@ -441,6 +441,22 @@ fn test_ed25519ph_with_rfc_8032_test_vector() {
     assert!(verification.is_ok());
 }
 
+fn test_square_roots() {
+    let two = &FieldElement::ONE + &FieldElement::ONE;
+    // four has Legendre symbol of minus one
+    let four = &two * &two;
+    let sqrt_minus_four = &four.pow2523() * &four;
+    assert_eq!(&sqrt_minus_four * &sqrt_minus_four, -&four);
+    let sqrt_four = &FieldElement::I * &sqrt_minus_four;
+    assert_eq!(&sqrt_four * &sqrt_four, four);
+
+    let three = &two + &FieldElement::ONE;
+    // nine has Legendre symbol of one
+    let nine = &three * &three;
+    let sqrt_nine = &nine.pow2523() * &nine;
+    assert_eq!(&sqrt_nine * &sqrt_nine, nine);
+}
+
 #[entry]
 fn main() -> ! {
 
@@ -452,6 +468,7 @@ fn main() -> ! {
     test_arithmetic();
     test_negation();
     test_inversion();
+    test_square_roots();
     test_signature();
 
     test_ed25519_rfc_8032_test_1();
@@ -466,7 +483,7 @@ fn main() -> ! {
 
     test_ed25519ph_with_rfc_8032_test_vector();
 
-    hprintln!("Tests passed!").ok();
+    hprintln!("All tests passed, including RFC 8032 test vectors!").ok();
 
     debug::exit(debug::EXIT_SUCCESS);
 

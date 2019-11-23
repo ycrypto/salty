@@ -79,7 +79,7 @@ impl CompressedY {
         let v7 = &(&v4 * &v2) * &v;
 
         let t = &v7 * &u; // term: t = uv**7
-        let mut X = &(&(&t.possible_sqrt() * &u) * &v2) * &v;  // aka `beta`
+        let mut X = &(&(&t.pow2523() * &u) * &v2) * &v;  // aka `beta`
 
         let chk = &X.squared() * &v;
         if chk != u {

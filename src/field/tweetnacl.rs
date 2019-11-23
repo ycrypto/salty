@@ -202,7 +202,7 @@ impl FieldImplementation for FieldElement {
     //   FOR(a,16) o[a]=c[a];
     // }
     /// TODO: figure out why this doesn't pass the test at the end
-    fn possible_sqrt(&self) -> FieldElement {
+    fn pow2523(&self) -> FieldElement {
 
         let mut sqrt = self.clone();
 
@@ -431,23 +431,29 @@ mod tests {
         assert_eq!(maybe_one, FieldElement::ONE);
     }
 
-    // #[test]
-    // fn test_possible_sqrt() {
-    //     let d2 = &FieldElement::ONE + &FieldElement::ONE;
+    #[test]
+    fn test_imaginary() {
+        let minus_one = -&FieldElement::ONE;
+        let i_squared = &FieldElement::I * &FieldElement::I;
 
-    //     let d2_sq = &d2 * &d2; // <-- certainly a square
-    //     let maybe_d2 = d2_sq.possible_sqrt();
-    //     // assert_eq!(d2, maybe_d2);
-    //     let maybe_d2_sq = &maybe_d2 * &maybe_d2;
+        assert_eq!(minus_one, i_squared);
+    }
 
-    //     // assert_eq!(&maybe_d2_sq - &d2_sq , FieldElement::ZERO);
+    #[test]
+    fn test_square_roots() {
+        let two = &FieldElement::ONE + &FieldElement::ONE;
+        // four has Legendre symbol of minus one
+        let four = &two * &two;
+        let sqrt_minus_four = &four.pow2523() * &four;
+        assert_eq!(&sqrt_minus_four * &sqrt_minus_four, -&four);
+        let sqrt_four = &FieldElement::I * &sqrt_minus_four;
+        assert_eq!(&sqrt_four * &sqrt_four, four);
 
-    //     assert_eq!(d2_sq.to_bytes(), maybe_d2_sq.to_bytes());
+        let three = &two + &FieldElement::ONE;
+        // nine has Legendre symbol of one
+        let nine = &three * &three;
+        let sqrt_nine = &nine.pow2523() * &nine;
+        assert_eq!(&sqrt_nine * &sqrt_nine, nine);
+    }
 
-    //     // let possible_sqrt_d2 = d2.possible_sqrt();
-    //     // let maybe_d2 = &possible_sqrt_d2 * &possible_sqrt_d2;
-
-    //     // assert_eq!(d2.to_bytes(), maybe_d2.to_bytes());
-    //     // assert!((d2 == maybe_d2) || (d2 == -&maybe_d2));
-    // }
 }
