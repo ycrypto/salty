@@ -4,6 +4,8 @@
 //!
 //! this is what we will replace with Haase's assembly code in v0.3.0
 
+// NB: This is no longer used
+
 type FieldElementBuffer = [i64; 16];  // or `FieldElementAsLimbs`?
 
 /// Elements of the base field of the curve
