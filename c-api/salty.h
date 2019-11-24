@@ -63,14 +63,24 @@ void salty_sign(const uint8_t (*seed)[salty_SECRETKEY_SEED_LENGTH],
                 uint8_t (*signature)[salty_SIGNATURE_SERIALIZED_LENGTH]);
 
 /**
+ * Signs the data for a context, based on the keypair generated from the secret seed.
+ */
+salty_Error salty_sign_with_context(const uint8_t (*seed)[salty_SECRETKEY_SEED_LENGTH],
+                                    const uint8_t *data_ptr,
+                                    uintptr_t data_len,
+                                    const uint8_t *context_ptr,
+                                    uintptr_t context_len,
+                                    uint8_t (*signature)[salty_SIGNATURE_SERIALIZED_LENGTH]);
+
+/**
  * Signs the prehashed data, based on the keypair generated from the secret seed.
  * An optional context can also be passed (this is recommended).
  */
-int8_t salty_sign_prehashed(const uint8_t (*seed)[salty_SECRETKEY_SEED_LENGTH],
-                            const uint8_t (*prehashed_data)[salty_SHA512_LENGTH],
-                            const uint8_t *context_ptr,
-                            uintptr_t context_len,
-                            uint8_t (*signature)[salty_SIGNATURE_SERIALIZED_LENGTH]);
+salty_Error salty_sign_prehashed(const uint8_t (*seed)[salty_SECRETKEY_SEED_LENGTH],
+                                 const uint8_t (*prehashed_data)[salty_SHA512_LENGTH],
+                                 const uint8_t *context_ptr,
+                                 uintptr_t context_len,
+                                 uint8_t (*signature)[salty_SIGNATURE_SERIALIZED_LENGTH]);
 
 /**
  * Verify a presumed signature on the given data.
@@ -79,6 +89,16 @@ salty_Error salty_verify(const uint8_t (*public_key)[salty_PUBLICKEY_SERIALIZED_
                          const uint8_t *data_ptr,
                          uintptr_t data_len,
                          const uint8_t (*signature)[salty_SIGNATURE_SERIALIZED_LENGTH]);
+
+/**
+ * Verify a presumed signature on the given data for a context.
+ */
+salty_Error salty_verify_with_context(const uint8_t (*public_key)[salty_PUBLICKEY_SERIALIZED_LENGTH],
+                                      const uint8_t *data_ptr,
+                                      uintptr_t data_len,
+                                      const uint8_t *context_ptr,
+                                      uintptr_t context_len,
+                                      const uint8_t (*signature)[salty_SIGNATURE_SERIALIZED_LENGTH]);
 
 /**
  * Verify a presumed signature on the given data.

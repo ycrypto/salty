@@ -50,11 +50,11 @@ void salty_sign(const uint8_t (*seed)[salty_SECRETKEY_SEED_LENGTH],
 
 /// Signs the prehashed data, based on the keypair generated from the secret seed.
 /// An optional context can also be passed (this is recommended).
-int8_t salty_sign_prehashed(const uint8_t (*seed)[salty_SECRETKEY_SEED_LENGTH],
-                            const uint8_t (*prehashed_data)[salty_SHA512_LENGTH],
-                            const uint8_t *context_ptr,
-                            uintptr_t context_len,
-                            uint8_t (*signature)[salty_SIGNATURE_SERIALIZED_LENGTH]);
+salty_Error salty_sign_prehashed(const uint8_t (*seed)[salty_SECRETKEY_SEED_LENGTH],
+                                 const uint8_t (*prehashed_data)[salty_SHA512_LENGTH],
+                                 const uint8_t *context_ptr,
+                                 uintptr_t context_len,
+                                 uint8_t (*signature)[salty_SIGNATURE_SERIALIZED_LENGTH]);
 
 /// Verify a presumed signature on the given data.
 salty_Error salty_verify(const uint8_t (*public_key)[salty_PUBLICKEY_SERIALIZED_LENGTH],

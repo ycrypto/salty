@@ -202,11 +202,48 @@ impl PublicKey {
         }
     }
 
+    pub fn verify_with_context(
+        &self,
+        message: &[u8],
+        signature: &Signature,
+        context: &[u8],
+    ) -> Result {
+
+        debug_assert!(context.len() <= 255, "The context must not be longer than 255 octets.");
+
+        let hash = Sha512::new()
+            // Ed25519ph parts
+            .updated(b"SigEd25519 no Ed25519 collisions")
+            .updated(&[0])
+            // context parts
+            .updated(&[context.len() as u8])
+            .updated(context)
+            // usual parts
+            .updated(&signature.r.0)
+            .updated(&self.compressed.0)
+            .updated(message)
+            .finalize();
+
+        let k: Scalar = Scalar::from_u512_le(&hash);
+
+        #[allow(non_snake_case)]
+        let minus_A = -&self.point;
+
+        #[allow(non_snake_case)]
+        let R: CurvePoint = &(&signature.s * &CurvePoint::basepoint()) + &(&k * &minus_A);
+
+        if R.compressed() == signature.r {
+            Ok(())
+        } else {
+            Err(Error::SignatureInvalid)
+        }
+    }
+
     pub fn verify_prehashed(
         &self,
-        prehashed_message: &[u8],
+        prehashed_message: &[u8; SHA512_LENGTH],
         signature: &Signature,
-        context: Option<&'static [u8]>,
+        context: Option<&[u8]>,
     ) -> Result {
 
         // By default, the context is an empty string.

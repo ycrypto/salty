@@ -10,10 +10,11 @@ deep-clean: clean
 	rm -rf example/libopencm3
 
 clean:
+	cargo clean
 	make -C example clean
 
 prepare-example:
-	git clone https://github.com/libopencm3/libopencm3 example/libopencm3
+	-git clone https://github.com/libopencm3/libopencm3 example/libopencm3
 	# FP_FLAGS="-mfloat-abi=soft" $(MAKE) -C example/libopencm3
 	$(MAKE) -C example/libopencm3
 	# for some reason, libopencm3 overwrites our nice `link.x`
