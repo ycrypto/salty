@@ -1,6 +1,6 @@
 [build]
-  command = "curl https://sh.rustup.rs -sSf | sh -s -- -y && source $HOME/.cargo/env && cargo doc --document-private-items"
-  publish = "target/doc"
+  command = "curl https://sh.rustup.rs -sSf | sh -s -- -y && source $HOME/.cargo/env && rustup target add thumbv7em-none-eabi && cargo doc --document-private-items --features haase --target thumbv7em-none-eabi"
+  publish = "target/thumbv7em-none-eabi/doc"
 
 [[redirects]]
   from = "/"

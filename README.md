@@ -19,7 +19,7 @@
       alt="Download" />
   </a>
   <!-- docs.rs docs -->
-  <a href="https://salty-main.netlify.com">
+  <a href="https://salty-api.netlify.com">
     <img src="https://img.shields.io/badge/docs-main_branch-blue.svg?style=flat-square"
       alt="docs.rs docs" />
   </a>
@@ -49,7 +49,7 @@
 [docs-image]: https://docs.rs/salty/badge.svg?style=flat-square
 [docs-link]: https://docs.rs/salty
 [docs-main-image]: https://img.shields.io/badge/docs-main-blue?style=flat-square
-[docs-main-link]: https://salty-main.netlify.com
+[docs-main-link]: https://salty-api.netlify.com
 
 Small, sweet, swift: Ed25519 signatures for microcontrollers.  
 With optimizations for Cortex-M4 and Cortex-M33.

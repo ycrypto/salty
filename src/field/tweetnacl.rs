@@ -36,11 +36,12 @@ impl ConditionallySelectable for FieldElement {
         // TweetNacl translated to Choice language
         // let mask: i64 = !(choice.unwrap_u8() as i64) - 1);
         // `subtle` definition, which is equivalent
-        let mask: i64 = -(choice.unwrap_u8() as i64);
+        // let mask: i64 = -(choice.unwrap_u8() as i64);
         for (ai, bi) in a.0.iter_mut().zip(b.0.iter_mut()) {
-            let t = mask & (*ai ^ *bi);
-            *ai ^= t;
-            *bi ^= t;
+            // let t = mask & (*ai ^ *bi);
+            // *ai ^= t;
+            // *bi ^= t;
+            i64::conditional_swap(ai, bi, choice);
         }
     }
 }
@@ -97,24 +98,15 @@ impl FieldImplementation for FieldElement {
         0xdf0b, 0x4fc1, 0x2480, 0x2b83,
     ]);
 
-    // fn reduce(&mut self) {
-    //     self.reduce_once();
-    //     self.reduce_once();
-    // }
-
-    // fn conditional_swap(&mut self, other: &mut FieldElement, b: bool) {
-    //     _conditional_swap(self, other, b as i64);
-    // }
-
     fn to_bytes(&self) -> [u8; 32] {
         // make our own private copy
         let mut fe = self.clone();
 
         // three times' the charm??
         // TODO: figure out why :)
-        fe.reduce_once();
-        fe.reduce_once();
-        fe.reduce_once();
+        fe.carry();
+        fe.carry();
+        fe.carry();
 
         // let m_buf: FieldElementBuffer = Default::default();
         // let mut m: FieldElement = FieldElement(m_buf);
@@ -316,8 +308,8 @@ impl<'a, 'b> Mul<&'b FieldElement> for &'a FieldElement {
         let mut fe = FieldElement(product);
         // normalize such that all limbs lie in [0, 2^16)
         // TODO: why twice? why is twice enough?
-        fe.reduce_once();
-        fe.reduce_once();
+        fe.carry();
+        fe.carry();
 
         fe
     }
@@ -332,7 +324,7 @@ impl<'b> MulAssign<&'b FieldElement> for FieldElement {
 
 
 impl FieldElement {
-    fn reduce_once(&mut self) {
+    fn carry(&mut self) {
         // TODO: multiplication calls this twice!!
         // TODO: to_bytes calls this thrice!!!
         //
