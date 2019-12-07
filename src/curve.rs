@@ -25,7 +25,7 @@ use crate::{
 };
 
 
-/// These represent the (X,Y,T,Z) coordinates
+/// These represent the (X,Y,Z,T) coordinates
 #[derive(Clone,Copy,Debug,Default)]
 pub struct CurvePoint (
     // TODO: maybe label them properly

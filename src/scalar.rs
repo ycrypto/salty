@@ -5,9 +5,9 @@ use core::ops::{
 
 use crate::constants::SCALAR_LENGTH;
 
-/// 32 octets, interpreted as 256bit integer
+/// 32 octets, interpreted as little-endian 256 bit unsigned integer
 pub type U256le = [u8; 32];
-/// 64 octets, interpreted as 256bit integer
+/// 64 octets, interpreted as little-endian 512 bit unsigned integer
 pub type U512le = [u8; 64];
 
 /// Since the curve is an abelian group, it has a module

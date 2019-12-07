@@ -18,6 +18,7 @@ use super::FieldImplementation;
 
 pub type Limbs = [i64; 16];
 
+/// Element of the base field of the elliptic curve
 #[derive(Clone,Copy,Debug,Default)]
 pub struct FieldElement(pub Limbs);
 

@@ -33,13 +33,13 @@ use crate::{
 /// This crate, as of now, offers two implementations:
 /// - TweetNaCl: a transliteration of the TweetNaCl code to Rust
 /// - Haase: a fast implementation in assembly, due to Bjoern Haase
-/// - Schoolbook: our own attempt at a fast yet readable implementation
 ///
-/// TODO: Due to "coherence", we can't (I believe) implement, e.g.
-/// PartialEq in constant-time, using subtle::ConstantTimeEq and
-/// the required (assumed constant-time) method `.to_bytes()`.
-/// Similarly, we can't just required `AddAssign` and implement `Add`
-/// ourselves. It would be nice to improve this somehow.
+/// Planned: Schoolbook: our own attempt at a fast yet readable implementation
+///
+/// Originally, the plan was to have everything generic over the field
+/// implementation, so far we have not been successful in convincing the Rust
+/// compiler of this. Therefore, currently the implementations must be selected
+/// at compile time using feature flags.
 pub trait FieldImplementation
 where
     // Self: Sized,

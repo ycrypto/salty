@@ -1,6 +1,3 @@
-// #![cfg(test)]
-// use super::hash;
-
 #[test]
 fn test_empty_hash() {
     let mut empty_hash = [0u8; 64];

@@ -29,7 +29,7 @@ pub struct SecretKey {
     #[allow(dead_code)]
     pub (crate) seed: [u8; SECRETKEY_SEED_LENGTH],
     pub (crate) scalar: Scalar,
-    pub (crate) nonce: [u8; SECRETKEY_NONCE_LENGTH],
+    pub /*(crate)*/ nonce: [u8; SECRETKEY_NONCE_LENGTH],
 }
 
 /// a public key, consisting internally of both its defining
@@ -55,15 +55,6 @@ pub struct Signature {
     pub r: CompressedY,
     pub s: Scalar,
 }
-
-// impl Signature {
-//     pub fn to_bytes(&self) -> [u8; SIGNATURE_SERIALIZED_LENGTH] {
-//         let mut signature_bytes: [u8; SIGNATURE_SERIALIZED_LENGTH] = [0u8; SIGNATURE_SERIALIZED_LENGTH];
-//         signature_bytes[..32].copy_from_slice(self.r.as_bytes());
-//         signature_bytes[32..].copy_from_slice(self.s.as_bytes());
-//         signature_bytes
-//     }
-// }
 
 impl Keypair {
     pub fn sign(&self, message: &[u8]) -> Signature {
@@ -278,6 +269,15 @@ impl PublicKey {
         }
     }
 
+}
+
+impl PublicKey {
+    pub fn as_bytes(&self) -> &[u8; 32] {
+        &self.compressed.as_bytes()
+    }
+    pub fn to_bytes(&self) -> [u8; 32] {
+        self.compressed.to_bytes()
+    }
 }
 
 impl From<&[u8; SECRETKEY_SEED_LENGTH]> for SecretKey {

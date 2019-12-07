@@ -22,7 +22,7 @@ rustup:
 	rustup component add rustfmt
 
 test:
-	cargo test
+	cargo test --features tweetnacl
 
 .PHONY: venv
 # re-run as necessary

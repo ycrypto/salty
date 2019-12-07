@@ -201,6 +201,7 @@ pub fn sha512(digest: &mut [u8; 64], msg: &[u8]) {
 }
 
 
+/// self-contained Sha512 hash, following TweetNaCl
 pub struct Sha512 {
     digest: Digest,
     buffer: [u8; 128],
@@ -223,7 +224,8 @@ impl Sha512 {
     pub fn update(&mut self, data: &[u8]) {
         self.data_length += data.len();
 
-        if self.unprocessed + data.len() < 128 {
+        // if self.unprocessed + data.len() < 128 {
+        if self.unprocessed + data.len() & !(0x80 - 1) == 0 {
             self.buffer[self.unprocessed..self.unprocessed + data.len()]
                 .copy_from_slice(&data);
             self.unprocessed += data.len();
