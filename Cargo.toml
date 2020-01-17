@@ -4,6 +4,7 @@ version = "0.1.0-alpha.0"
 authors = ["Nicolas Stalder <n@stalder.io>"]
 edition = "2018"
 description = "Small, sweet, swift Ed25519 signatures for microcontrollers"
+homepage = "https://salty.rs"
 repository = "https://github.com/nickray/salty"
 license = "Apache-2.0 OR MIT"
 readme = "README.md"
@@ -13,6 +14,7 @@ keywords = ["no-std", "NaCl", "Ed25519", "cryptography", "signatures"]
 features = ["tweetnacl"]
 
 [dependencies]
+cosey = { git = "https://github.com/ycrypto/cosey", branch = "main", optional = true }
 subtle = { version = "2.2", default-features = false }
 
 [dev-dependencies]
@@ -22,3 +24,4 @@ hex-literal = "0.2.1"
 field-implementation = []
 tweetnacl = ["field-implementation"]
 haase = ["field-implementation"]
+cose = ["cosey"]

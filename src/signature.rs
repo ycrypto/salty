@@ -1,5 +1,8 @@
 use core::convert::TryFrom;
 
+#[cfg(feature = "cose")]
+pub use cosey::Ed25519PublicKey as CosePublicKey;
+
 use crate::{
     Error,
     Result,
@@ -35,7 +38,7 @@ pub struct SecretKey {
 /// a public key, consisting internally of both its defining
 /// point (the secret scalar times the curve base point)
 /// and the compression of that point.
-#[derive(Debug,Default,PartialEq)]
+#[derive(Clone,Debug,Default,PartialEq)]
 pub struct PublicKey {
     #[allow(dead_code)]
     pub(crate) point: CurvePoint,
@@ -55,6 +58,15 @@ pub struct Signature {
     pub r: CompressedY,
     pub s: Scalar,
 }
+
+// impl core::cmp::PartialEq<Signature> for Signature {
+//     fn eq(&self, other: &Self) -> bool {
+//         for (l, r) in self.0.iter().zip(other.0.iter()) {
+//             if l != r { return false; }
+//         }
+//         true
+//     }
+// }
 
 impl Keypair {
     pub fn sign(&self, message: &[u8]) -> Signature {
@@ -277,6 +289,26 @@ impl PublicKey {
     }
     pub fn to_bytes(&self) -> [u8; 32] {
         self.compressed.to_bytes()
+    }
+}
+
+#[cfg(feature = "cose")]
+impl Into<CosePublicKey> for PublicKey {
+    fn into(self) -> CosePublicKey {
+        CosePublicKey {
+            x: cosey::Bytes::try_from_slice(&self.as_bytes()[..]).unwrap(),
+        }
+    }
+}
+
+#[cfg(feature = "cose")]
+impl TryFrom<&CosePublicKey> for PublicKey {
+    type Error = crate::Error;
+
+    fn try_from(cose: &CosePublicKey) -> Result<PublicKey> {
+        use core::convert::TryInto;
+        let okp: &[u8; 32] = cose.x.as_ref().try_into().unwrap();
+        Self::try_from(okp)
     }
 }
 

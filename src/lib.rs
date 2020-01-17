@@ -193,3 +193,5 @@ pub use curve::{CurvePoint, CompressedY};
 
 mod signature;
 pub use signature::{SecretKey, PublicKey, Keypair, Signature};
+#[cfg(feature = "cose")]
+pub use signature::CosePublicKey;
