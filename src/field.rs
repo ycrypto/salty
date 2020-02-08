@@ -128,17 +128,12 @@ where
 
 }
 
-#[cfg(feature = "tweetnacl")]
+#[cfg(tweetnacl)]
 pub mod tweetnacl;
-#[cfg(feature = "tweetnacl")]
+#[cfg(tweetnacl)]
 pub use tweetnacl::{Limbs, FieldElement};
 
-#[cfg(feature = "haase")]
+#[cfg(haase)]
 pub mod haase;
-#[cfg(feature = "haase")]
+#[cfg(haase)]
 pub use haase::{Limbs, FieldElement};
-
-#[cfg(not(feature = "field-implementation"))]
-// define empty struct so compile error is readable
-pub struct FieldElement {}
-

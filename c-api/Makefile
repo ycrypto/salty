@@ -1,9 +1,9 @@
 TARGET = thumbv7em-none-eabihf
 build:
-	cargo build --release --features haase --target $(TARGET)
+	cargo build --release --target $(TARGET)
 	cp target/$(TARGET)/release/build/salty-*/out/libsalty-asm.a libsalty-asm.a
 	cp target/$(TARGET)/release/libsalty_c_api.a libsalty.a
-	cargo build --features haase --target $(TARGET)
+	cargo build --target $(TARGET)
 	cp target/$(TARGET)/debug/libsalty_c_api.a libsalty-debug.a
 
 deep-clean: clean

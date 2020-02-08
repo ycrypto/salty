@@ -1,9 +1,15 @@
+use std::env;
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("cargo:rerun-if-changed=build.rs");
 
-    #[cfg(feature = "haase")] {
+    // Cortex-M33 is compatible with Cortex-M4 and its DSP extension instruction UMAAL.
+    let target = env::var("TARGET")?;
+    let cortex_m4 = target.starts_with("thumbv7em") || target.starts_with("thumbv8m.main");
+    let fast_cortex_m4 = cortex_m4 && !cfg!(feature = "tweetnacl-on-cortex-m4");
 
+    if fast_cortex_m4 {
         // According to the ARMv7-M Architecture Reference Manual,
         // there are two architecture extensions:
         // - the DSP extension: this is what we need, it is also called
@@ -40,6 +46,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("cargo:rustc-link-search={}", out_dir.display());
 
         println!("cargo:rerun-if-changed=bin/salty-asm.a");
+
+        println!("cargo:rustc-cfg=haase");
+    } else {
+        println!("cargo:rustc-cfg=tweetnacl");
     }
 
     Ok(())

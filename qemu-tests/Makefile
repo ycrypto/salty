@@ -1,40 +1,37 @@
-# IMPL = tweetnacl
-IMPL = haase
-
 main-test:
-	cargo run --features haase --release
+	cargo run --release
 
 test:
 	@echo "\nTesting Haase field implementation, debug build\n"
-	time cargo run --features haase
+	time cargo run
 	@echo "\nTesting Haase field implementation, release build\n"
-	time cargo run --features haase --release
-	@echo "\nTesting TweetNaCl field implementation, debug build"
-	@echo "Patience please, this is veeery slow :)\n"
-	time cargo run --features tweetnacl
+	time cargo run --release
+	# @echo "\nTesting TweetNaCl field implementation, debug build"
+	# @echo "Patience please, this is veeery slow :)\n"
+	time cargo run --features slow
 	@echo "\nTesting TweetNaCl field implementation, release build\n"
-	time cargo run --features tweetnacl --release
-
-build:
-	cargo build --features $(IMPL)
+	time cargo run --features slow --release
 
 size: build
 	arm-none-eabi-size $(KERNEL)
 
+build:
+	cargo build
+
 build-release:
-	cargo build --features $(IMPL) --release
+	cargo build --release
 
 size-release: build-release
 	arm-none-eabi-size $(KERNEL_RELEASE)
 	arm-none-eabi-size $(KERNEL_RELEASE) -A
 
 run:
-	cargo run --features $(IMPL)
+	cargo run
 
 run-release:
 	# cargo size --features $(IMPL) --release
 	arm-none-eabi-size $(KERNEL_RELEASE)
-	cargo run --features $(IMPL) --release
+	cargo run --release
 
 SEMIHOSTING = -semihosting-config enable=on,target=native
 KERNEL = target/thumbv8m.main-none-eabi/debug/qemu-tests

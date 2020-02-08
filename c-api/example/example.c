@@ -4,9 +4,15 @@
 
 extern void  initialise_monitor_handles(void);
 
+// NB: The way to do semihosting in C-land seems
+// to be to link `newlib`, call `initialise_monitor_handles`,
+// and then `printf`: [1]
+//
+// [1]: https://bgamari.github.io/posts/2014-10-31-semihosting.html
+
 int main(void) {
 
-    /* initialise_monitor_handles(); */
+    initialise_monitor_handles();
 
     uint8_t seed[32] = {
         0x35, 0xb3, 0x07, 0x76, 0x17, 0x9a, 0x78, 0x58,
@@ -29,7 +35,7 @@ int main(void) {
 
     /* assert(1); */
 
-    /* printf("signature generated\n"); */
+    printf("signature generated\n");
 
     /* let keypair = salty::Keypair::from(&seed); */
 

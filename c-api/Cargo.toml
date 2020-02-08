@@ -17,9 +17,7 @@ salty = { path = ".." }
 panic-halt = "0.2"
 
 [features]
-field-implementation = []
-tweetnacl = ["salty/tweetnacl", "field-implementation"]
-haase = ["salty/haase", "field-implementation"]
+tweetnacl-on-cortex-m4 = ["salty/tweetnacl-on-cortex-m4"]
 
 [profile.release]
 codegen-units = 1

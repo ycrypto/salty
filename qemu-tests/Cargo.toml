@@ -18,5 +18,10 @@ panic-semihosting = { version = "0.5.3", features = ["exit"] }
 path = ".."
 
 [features]
-tweetnacl = ["salty/tweetnacl"]
-haase = ["salty/haase"]
+slow = ["salty/tweetnacl-on-cortex-m4"]
+
+[profile.release]
+codegen-units = 1
+debug = true
+lto = true
+opt-level = "z"

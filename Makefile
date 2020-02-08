@@ -1,9 +1,9 @@
 TARGET ?= thumbv7em-none-eabihf
 
 build build-release:
-	cargo build --release --features tweetnacl # --target x86_64-unknown-linux-gnu
-	cargo build --release --features tweetnacl --target thumbv7em-none-eabihf
-	cargo build --release --features haase --target thumbv7em-none-eabihf
+	cargo build --release
+	cargo build --release --target thumbv7em-none-eabi
+	cargo build --release --features tweetnacl-on-cortex-m4 --target thumbv7em-none-eabi
 
 build-debug:
 	cargo build
@@ -12,7 +12,7 @@ c-bindings:
 	cbindgen --config cbindgen.toml --output auto_salty.h
 
 local-docs:
-	cargo doc --document-private-items --features tweetnacl
+	cargo doc --document-private-items
 
 fmt:
 	cargo fmt
@@ -22,7 +22,7 @@ rustup:
 	rustup component add rustfmt
 
 test:
-	cargo test --features tweetnacl
+	cargo test
 
 .PHONY: venv
 # re-run as necessary

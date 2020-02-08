@@ -16,7 +16,7 @@ LDLIBS += ../libsalty.a
 LDLIBS += ../libsalty-asm.a
 LDSCRIPT = link.x
 LDFLAGS	+= --specs=rdimon.specs
-LDLIBS+= -lrdimon
+LDLIBS+= -lc -lrdimon
 
 include $(OPENCM3_DIR)/mk/genlink-config.mk
 include rules.mk

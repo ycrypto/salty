@@ -1,4 +1,4 @@
-#![no_std]
+#![cfg_attr(not(test), no_std)]
 /*!
 Mashup of [TweetNaCl](https://tweetnacl.cr.yp.to/) with
 [ed25519-dalek](https://lib.rs/crates/ed25519-dalek)
@@ -94,26 +94,26 @@ for both regular and prehashed signatures.
 
 ## Features
 The bulk of time generating and verifying signatures is spent with field operations
-in the base field of the underlying elliptic curve. This library has two features `tweetnacl`
-and `haase`, which determine the implementation of these field operations. One of these
-must explicitly be selected. The `tweetnacl` implementation is portable but quite slow,
-whereas the `haase` implementation makes use of the `UMAAL` assembly instruction, which
-is only available on Cortex-M4 and Cortex-M33 microcontrollers.
+in the base field of the underlying elliptic curve. This library has two implementations:
+The `tweetnacl` implementation is portable but quite slow, and the `haase` implementation,
+which makes use of the `UMAAL` assembly instruction, which is only available on
+Cortex-M4 and Cortex-M33 microcontrollers. By default, on these targets the fast implementation
+is selected, the `tweetnacl` variant can be triggered with the `tweetnacl-on-cortex-m4` feature.
 
 This `UMAAL` operation is a mapping `(a, b, c, d) ⟼ a*b + c + d`, where the inputs are `u32`
 and the output is a `u64` (there is no overflow). In the future, we hope to offer a third
 implementation, which would do "schoolbook multiplication", but using this operation, e.g.
 as a compiler intrinsic. The idea is to have a similarly speedy implementation without the
-obscurity of the generated assembly code of the `haase` feature.
+obscurity of the generated assembly code of the `haase` implementation.
 
-Current numbers on an NXP LPC55S69 running at 96Mhz, with "tweetnacl" feature:
+Current numbers on an NXP LPC55S69 running at 96Mhz, with "tweetnacl" implementation:
 - signing prehashed message: 52,632,954 cycles
 - verifying said message: 100,102,158 cycles
 - code size for this: 19,724 bytes
 
 Obviously, this needed to improve.
 
-Current numbers on an NXP LPC55S69 running at 96Mhz, with "haase" feature:
+Current numbers on an NXP LPC55S69 running at 96Mhz, with "haase" implementation:
 - signing prehashed message: 8,547,161 cycles
 - verifying said message: 16,046,465 cycles
 - code size: similar
@@ -166,14 +166,6 @@ pub enum Error {
 
 /// Result type for all `salty` operations.
 pub type Result<T = ()> = core::result::Result<T, Error>;
-
-#[cfg(any(
-    not(feature = "field-implementation"),
-    all(feature = "tweetnacl", feature = "haase")
-))]
-compile_error!("Please select exactly one of the available field implementation features:
-  - tweetnacl
-  - haase");
 
 pub mod constants;
 
