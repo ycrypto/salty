@@ -20,11 +20,11 @@ tasks:
 - build-tweetnacl: |
     cd salty
     source $HOME/.cargo/env
-    RUSTFLAGS="-D warnings" cargo build --target thumbv7em-none-eabi --release --features tweetnacl
+    RUSTFLAGS="-D warnings" cargo build --release --features tweetnacl-on-cortex-m4 --target thumbv7em-none-eabi
 - build-haase: |
     cd salty
     source $HOME/.cargo/env
-    RUSTFLAGS="-D warnings" cargo build --target thumbv7em-none-eabi --release --features haase
+    RUSTFLAGS="-D warnings" cargo build --release --target thumbv7em-none-eabi
 
 - test-assemble: |
     cd salty
@@ -35,7 +35,7 @@ tasks:
 - test-tweetnacl: |
     cd salty
     source $HOME/.cargo/env
-    cargo test --release --features tweetnacl
+    cargo test --release
 - test-haase: |
     cd salty/qemu-tests
     source $HOME/.cargo/env
