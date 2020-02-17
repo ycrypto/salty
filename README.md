@@ -55,13 +55,20 @@
 [docs-link]: https://docs.rs/salty
 [docs-main-image]: https://img.shields.io/badge/docs-main-blue?style=flat-square
 [docs-main-link]: https://salty-api.netlify.com
+[solokeys-img]: .github/images/solokeys-120-40.png
+[solokeys-url]: https://solokeys.com
+[yamnord-img]: .github/images/yamnord-120-40-alt.png
+[yamnord-url]: https://yamnord.com
 
 Small, sweet, swift: Ed25519 signatures for microcontrollers.  
 With assembly optimizations for Cortex-M4 and Cortex-M33.
 
-**NOTE: This is work-in-progress and not audited!
-<br>
-The usual warnings apply: Your hamster will explode, etc. etc.**
+**NOTE: This is work-in-progress and not audited! The usual warnings apply: Your hamster will explode, etc. etc.**
+
+Work on salty is sponsored by
+
+[![SoloKeys][solokeys-img]][solokeys-url]
+[![yamnord][yamnord-img]][yamnord-url]
 
 ## Goals
 
