@@ -22,14 +22,11 @@ type U256 = [u32; 8];
 // reduced, 0 <= value < 2*255 - 19
 // type U255 = [u32; 8];
 
-#[allow(non_camel_case_types)]
-pub type fe25519 = [u32; 8];
-
 extern "C" {
-    pub fn fe25519_mul_asm(pResult: *mut fe25519, pVal1: *const fe25519, pVal2: *const fe25519);
-    pub fn fe25519_square_asm(pResult: *mut fe25519, pVal1: *const fe25519);
+    pub fn fe25519_add_asm(result: *mut U256, left: *const U256, right: *const U256);
+    pub fn fe25519_mul_asm(result: *mut U256, left: *const U256, right: *const U256);
+    pub fn fe25519_square_asm(result: *mut U256, value: *const U256);
 }
-
 
 #[derive(Clone,Copy,Debug,Default)]
 pub struct FieldElement(pub Limbs);
@@ -171,34 +168,7 @@ impl<'a, 'b> Add<&'b FieldElement> for &'a FieldElement {
     /// Addition of field elements
     fn add(self, other: &'b FieldElement) -> FieldElement {
         let mut sum = U256::default();
-        let mut accu: u64;
-
-        accu = self.0[7] as u64;
-        accu += other.0[7] as u64;
-
-        // force `sum[7]` to be at most 31 bit,
-        // so that an overflow from self[6]+other[6]
-        // can be added at the end.
-        // if sum[7] had the 31st bit set, replace
-        // the corresponding value of 2^255 with 19.
-        sum[7] = (accu as u32) & 0x7fff_ffff;
-        // the maximum value of "inner" accu >> 31 is 3,
-        // so the maximum value of accu is 3 * 19 = 57 = 0x39 = 0b11_1001
-        accu = (((accu >> 31) as u32) * 19) as u64;
-
-        // now we can reduce "on the fly"
-        for i in 0..7 {
-            accu += self.0[i] as u64;
-            accu += other.0[i] as u64;
-            sum[i] = accu as u32;
-            accu >>= 32;
-        }
-
-        // sum[7] is a 32 bit number, due to our
-        // preparations at the start!
-        accu += sum[7] as u64;
-        sum[7] = accu as u32;
-
+        unsafe { fe25519_add_asm(&mut sum, &self.0, &other.0); }
         FieldElement(sum)
     }
 }
