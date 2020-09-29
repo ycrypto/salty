@@ -177,6 +177,8 @@ pub use hash::Sha512;
 mod field;
 pub use field::{FieldElement, FieldImplementation};
 
+mod scalar29;
+
 mod scalar;
 pub use scalar::Scalar;
 
