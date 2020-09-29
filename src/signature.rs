@@ -20,10 +20,7 @@ use crate::{
         CompressedY,
     },
     hash::Sha512,
-    scalar::{
-        Scalar,
-        TweetNaclScalar,
-    },
+    scalar::Scalar,
 };
 
 /// a secret key, consisting internally of the seed and
@@ -90,8 +87,7 @@ impl Keypair {
             .finalize();
 
         let h: Scalar = Scalar::from_u512_le(&second_hash);
-        let mut s = &r.into() + &(&h.into() * &TweetNaclScalar::from(&self.secret.scalar));
-        let s = s.reduce_modulo_ell();
+        let s = &r.into() + &(&h.into() * &self.secret.scalar);
 
         Signature { r: R, s }
     }
@@ -132,8 +128,7 @@ impl Keypair {
             .finalize();
 
         let h: Scalar = Scalar::from_u512_le(&second_hash);
-        let mut s = &r.into() + &(&h.into() * &TweetNaclScalar::from(&self.secret.scalar));
-        let s = s.reduce_modulo_ell();
+        let s = &r.into() + &(&h.into() * &self.secret.scalar);
 
         Signature { r: R, s }
     }
@@ -175,8 +170,7 @@ impl Keypair {
             .finalize();
 
         let h: Scalar = Scalar::from_u512_le(&second_hash);
-        let mut s = &r.into() + &(&h.into() * &TweetNaclScalar::from(&self.secret.scalar));
-        let s = s.reduce_modulo_ell();
+        let s = &r.into() + &(&h.into() * &self.secret.scalar);
 
         Signature { r: R, s }
     }
@@ -507,6 +501,26 @@ mod tests {
         let public_key = keypair.public;
         let verification = public_key.verify_prehashed(&prehashed_message, &signature, None);
         assert!(verification.is_ok());
+    }
+
+    #[test]
+    fn test_reduction_of_s_modulo_ell() {
+        // previous transliteration of TweetNaCl's scalar implementation
+        // was bugged and didn't reduce S properly, leading to implementations like
+        // OpenSSL / libsodium / Python's "cryptography" rejecting ~1% of signatures
+        // (whereas SUPERCOP and python-ed25519 are fine with these).
+        let seed: &[u8; 32] = b"\\\x8a\x90\x83\x8d\x10U$\xfe\x8d\xf6Z\x9d\xaf\xd9\x9c\xc4\x08S{l\xa3\x1b9\x91\x0bqu5Ut\x15";
+        let data: &[u8; 69] = b"\xbf\xab\xc3t2\x95\x8b\x063`\xd3\xadda\xc9\xc4sZ\xe7\xf8\xed\xd4e\x92\xa5\xe0\xf0\x14R\xb2\xe4\xb5\x01\x00\x00\x0b\x0e123456789abcdef0123456789abcdef0";
+        let nonreduced_sig: &[u8; 64] = b"E\x13\x8aD\x1f\xb8\xd0\xc5k\x1f\xf7\xe5~u\x998I\x12\x17\x99\xf1X\xe0\xdeV\xf7))p\xea\x93\x9c\xfaV\xef\xeeP\xad\xdf*\x80O\xaaFA\x9d7\xd8L\xc4{\x93\xae\x96\x9e\xf09,\xb7\xf2\x00\xe56\x10";
+        // https://colab.research.google.com/drive/1ZDRWkO9o9YVbo6HLl7Weo3G35c4ccIID#scrollTo=ZZqxvbaB8gO4
+        let manually_reduced_s: &[u8; 32] = b"\r\x83\xf9\x916J\xcd\xd2\xa9\xb2\xb2\xa3b\xa3X\xc3L\xc4{\x93\xae\x96\x9e\xf09,\xb7\xf2\x00\xe56\x00";
+
+        let keypair = Keypair::from(seed);
+        let signature = keypair.sign(data);
+        let s = &signature.s;
+        assert_eq!(&s.0, manually_reduced_s);
+        assert_ne!(&s.0, &nonreduced_sig[32..]);
+
     }
 }
 
