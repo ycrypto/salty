@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <stdio.h>
+#include <unistd.h>
 #include "salty.h"
 
 extern void  initialise_monitor_handles(void);
@@ -31,11 +32,11 @@ int main(void) {
 
     salty_public_key(&seed, &public_key);
     salty_sign(&seed, data, 6, &signature);
-    salty_verify(&public_key, data, sizeof(data), &signature);
+    salty_Error err = salty_verify(&public_key, data, sizeof(data), &signature);
 
     /* assert(1); */
 
-    printf("signature generated\n");
+    printf("signature generated, verify returns: %d\n", err);
 
     /* let keypair = salty::Keypair::from(&seed); */
 
@@ -55,6 +56,9 @@ int main(void) {
     /*     0x32, 0xf9, 0xa6, 0x44, 0x2a, 0x17, 0xbc, 0x09, */
     /* ]; */
 
-    while (1) { continue; }
-    return 0;
+	/*
+	 * If running under QEMU, _exit() will also stop QEMU returning err.
+	 * If running on hardware, libopencm3 should handle correctly.
+	 */
+	_exit(err);
 }

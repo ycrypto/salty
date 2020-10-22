@@ -2,9 +2,8 @@ EXTERN(vector_table)
 ENTRY(reset_handler)
 MEMORY
 {
- ram (rwx) : ORIGIN = 0x30000000, LENGTH = 128K
- rom (rx) : ORIGIN = 0x10000000, LENGTH = 1024K
- ccm (rwx) : ORIGIN = 0x10000000, LENGTH = 64K
+ ram (rwx) : ORIGIN = 0x30000000, LENGTH =  128K
+ rom (rx) : ORIGIN =  0x10000000, LENGTH = 1024K
 }
 SECTIONS
 {
@@ -58,10 +57,6 @@ SECTIONS
   . = ALIGN(4);
   _ebss = .;
  } >ram
- .ccm : {
-  *(.ccmram*)
-  . = ALIGN(4);
- } >ccm
  /DISCARD/ : { *(.eh_frame) }
  . = ALIGN(4);
  end = .;

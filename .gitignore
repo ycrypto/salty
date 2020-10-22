@@ -3,4 +3,5 @@
 Cargo.lock
 /venv
 **/*.o
+**/*.map
 **/.gdb_history
