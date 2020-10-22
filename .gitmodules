@@ -1,0 +1,3 @@
+[submodule "c-api/libopencm3"]
+	path = c-api/libopencm3
+	url = https://github.com/libopencm3/libopencm3
