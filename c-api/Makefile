@@ -15,12 +15,14 @@ clean:
 libopencm3/lib/libopencm3_stm32f4.a:
 	$(MAKE) -C libopencm3
 
-build-example: libopencm3/lib/libopencm3_stm32f4.a
+example/example.elf: libopencm3/lib/libopencm3_stm32f4.a
 	$(MAKE) -C example
+
+build-example: example/example.elf
 
 SEMIHOSTING = -semihosting-config enable=on,target=native
 SPEC = -cpu cortex-m33 -machine musca-b1 -nographic
-run-example:
+run-example: build-example
 	# Get out via Ctrl-A X in case QEMU does not return
 	qemu-system-arm $(SPEC) $(SEMIHOSTING) -kernel example/example.elf
 
