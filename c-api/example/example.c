@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 #include "salty.h"
 
@@ -24,15 +25,15 @@ int main(void) {
 
     uint8_t public_key[32];
 
-    uint8_t data [] = "salty!";
+    const uint8_t data [] = "salty!";
 
     uint8_t signature[64];
 
     /* __asm__("BKPT"); */
 
     salty_public_key(&seed, &public_key);
-    salty_sign(&seed, data, 6, &signature);
-    salty_Error err = salty_verify(&public_key, data, sizeof(data), &signature);
+    salty_sign(&seed, data, strlen((const char*) data), &signature);
+    salty_Error err = salty_verify(&public_key, data, strlen((const char*) data), &signature);
 
     /* assert(1); */
 
