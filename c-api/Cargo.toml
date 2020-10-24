@@ -17,7 +17,7 @@ salty = { path = ".." }
 panic-halt = "0.2"
 
 [features]
-tweetnacl-on-cortex-m4 = ["salty/tweetnacl-on-cortex-m4"]
+slow-motion = ["salty/slow-motion"]
 
 [profile.release]
 codegen-units = 1

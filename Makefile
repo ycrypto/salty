@@ -3,7 +3,7 @@ TARGET ?= thumbv7em-none-eabihf
 build build-release:
 	cargo build --release
 	cargo build --release --target thumbv7em-none-eabi
-	cargo build --release --features tweetnacl-on-cortex-m4 --target thumbv7em-none-eabi
+	cargo build --release --features slow-motion --target thumbv7em-none-eabi
 
 build-debug:
 	cargo build

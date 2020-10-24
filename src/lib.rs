@@ -98,7 +98,7 @@ in the base field of the underlying elliptic curve. This library has two impleme
 The `tweetnacl` implementation is portable but quite slow, and the `haase` implementation,
 which makes use of the `UMAAL` assembly instruction, which is only available on
 Cortex-M4 and Cortex-M33 microcontrollers. By default, on these targets the fast implementation
-is selected, the `tweetnacl` variant can be triggered with the `tweetnacl-on-cortex-m4` feature.
+is selected, the `tweetnacl` variant can be triggered with the `slow-motion` feature.
 
 This `UMAAL` operation is a mapping `(a, b, c, d) ⟼ a*b + c + d`, where the inputs are `u32`
 and the output is a `u64` (there is no overflow). In the future, we hope to offer a third

@@ -7,7 +7,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Cortex-M33 is compatible with Cortex-M4 and its DSP extension instruction UMAAL.
     let target = env::var("TARGET")?;
     let cortex_m4 = target.starts_with("thumbv7em") || target.starts_with("thumbv8m.main");
-    let fast_cortex_m4 = cortex_m4 && !cfg!(feature = "tweetnacl-on-cortex-m4");
+    let fast_cortex_m4 = cortex_m4 && !cfg!(feature = "slow-motion");
 
     if fast_cortex_m4 {
         // According to the ARMv7-M Architecture Reference Manual,
