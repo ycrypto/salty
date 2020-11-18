@@ -14,9 +14,19 @@ hex-literal = "0.2.1"
 panic-semihosting = { version = "0.5.3", features = ["exit"] }
 salty = { path = ".." }
 # subtle = { version = "2.2", default-features = false }
+wycheproof = { version = "0.1", path = "../wycheproof" }
+wycheproof-gen = { version = "0.1", path = "../wycheproof/wycheproof-gen" }
 
 [profile.release]
 codegen-units = 1
 debug = true
 lto = true
 opt-level = "z"
+
+[[bin]]
+name = "qemu-tests"
+path = "src/main.rs"
+
+[[bin]]
+name = "wycheproof"
+path = "src/bin/wycheproof_on_target/main.rs"

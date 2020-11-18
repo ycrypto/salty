@@ -1,7 +1,0 @@
-[package]
-name = "tests-base"
-version = "0.1.0"
-authors = ["Enrik Berkhan <Enrik.Berkhan@inka.de>"]
-edition = "2018"
-description = "Project Wycheproof EDDSA tests for salty: shared result type."
-license = "Apache-2.0 OR MIT"

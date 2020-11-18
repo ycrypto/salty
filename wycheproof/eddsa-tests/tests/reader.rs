@@ -7,7 +7,7 @@ mod test {
 
     #[test]
     fn read_json() {
-        let contents = fs::read_to_string("../eddsa_test.json").unwrap();
+        let contents = fs::read_to_string("tests/eddsa_test.json").unwrap();
         let test: EddsaTest = serde_json::from_str(&contents).unwrap();
 
         assert_eq!(test.number_of_tests, 145);

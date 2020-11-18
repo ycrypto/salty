@@ -7,13 +7,9 @@ description = "Project Wycheproof EDDSA tests for salty."
 license = "Apache-2.0 OR MIT"
 
 [dependencies]
-salty = { path = ".." }
-tests-base = { path = "tests-base" }
-eddsa-tests-gen = { path = "eddsa-tests-gen" }
-
-cortex-m = "0.6.1"
-cortex-m-rt = "0.6.10"
-cortex-m-semihosting = "0.3.5"
-panic-semihosting = { version = "0.5.3", features = ["exit"] }
+wycheproof-gen = { path = "wycheproof-gen" }
 
 [build-dependencies]
+
+[workspace]
+members = [ "eddsa-tests", "wycheproof-gen" ]
