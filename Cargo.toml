@@ -16,6 +16,8 @@ subtle = { version = "2.2", default-features = false }
 
 [dev-dependencies]
 hex-literal = "0.2.1"
+wycheproof = { version = "0.1", path = "wycheproof" }
+wycheproof-gen = { version = "0.1", path = "wycheproof/wycheproof-gen" }
 
 [features]
 slow-motion = []
