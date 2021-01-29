@@ -68,14 +68,14 @@ impl FieldImplementation for FieldElement {
         0x56dffce7, 0x2406d9dc,
     ]);
 
-    const BASEPOINT_X: Self = Self([
+    const EDWARDS_BASEPOINT_X: Self = Self([
         0x8f25d51a, 0xc9562d60,
         0x9525a7b2, 0x692cc760,
         0xfdd6dc5c, 0xc0a4e231,
         0xcd6e53fe, 0x216936d3,
     ]);
 
-    const BASEPOINT_Y: Self = Self([
+    const EDWARDS_BASEPOINT_Y: Self = Self([
         0x6666_6658, 0x6666_6666,
         0x6666_6666, 0x6666_6666,
         0x6666_6666, 0x6666_6666,
@@ -93,6 +93,12 @@ impl FieldImplementation for FieldElement {
         121666, 0, 0, 0,
         0, 0, 0, 0,
     ]);
+
+    const MONTGOMERY_BASEPOINT_U: Self = Self([
+        9, 0, 0, 0,
+        0, 0, 0, 0,
+    ]);
+
 
     fn to_bytes(&self) -> [u8; 32] {
         // make our own private copy
