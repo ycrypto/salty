@@ -15,8 +15,8 @@ use crate::{
         PUBLICKEY_SERIALIZED_LENGTH,
         SIGNATURE_SERIALIZED_LENGTH,
     },
-    curve::{
-        CurvePoint,
+    edwards::{
+        EdwardsPoint,
         CompressedY,
     },
     hash::Sha512,
@@ -38,7 +38,7 @@ pub struct SecretKey {
 #[derive(Clone,Debug,Default,PartialEq)]
 pub struct PublicKey {
     #[allow(dead_code)]
-    pub(crate) point: CurvePoint,
+    pub(crate) point: EdwardsPoint,
     pub compressed: CompressedY,
 }
 
@@ -76,7 +76,7 @@ impl Keypair {
 
         let r: Scalar = Scalar::from_u512_le(&first_hash);
         #[allow(non_snake_case)]
-        let R: CompressedY = (&r * &CurvePoint::basepoint()).compressed();
+        let R: CompressedY = (&r * &EdwardsPoint::basepoint()).compressed();
 
 
         // S = r + H(R, A, M)s (mod l), with A = sB the public key
@@ -87,7 +87,7 @@ impl Keypair {
             .finalize();
 
         let h: Scalar = Scalar::from_u512_le(&second_hash);
-        let s = &r.into() + &(&h.into() * &self.secret.scalar);
+        let s = &r + &(&h * &self.secret.scalar);
 
         Signature { r: R, s }
     }
@@ -112,7 +112,7 @@ impl Keypair {
         // from here on, same as normal signing
         let r: Scalar = Scalar::from_u512_le(&first_hash);
         #[allow(non_snake_case)]
-        let R: CompressedY = (&r * &CurvePoint::basepoint()).compressed();
+        let R: CompressedY = (&r * &EdwardsPoint::basepoint()).compressed();
 
         let second_hash = Sha512::new()
             // Ed25519ph parts
@@ -128,7 +128,7 @@ impl Keypair {
             .finalize();
 
         let h: Scalar = Scalar::from_u512_le(&second_hash);
-        let s = &r.into() + &(&h.into() * &self.secret.scalar);
+        let s = &r + &(&h * &self.secret.scalar);
 
         Signature { r: R, s }
     }
@@ -154,7 +154,7 @@ impl Keypair {
         // from here on, same as normal signing
         let r: Scalar = Scalar::from_u512_le(&first_hash);
         #[allow(non_snake_case)]
-        let R: CompressedY = (&r * &CurvePoint::basepoint()).compressed();
+        let R: CompressedY = (&r * &EdwardsPoint::basepoint()).compressed();
 
         let second_hash = Sha512::new()
             // Ed25519ph parts
@@ -170,7 +170,7 @@ impl Keypair {
             .finalize();
 
         let h: Scalar = Scalar::from_u512_le(&second_hash);
-        let s = &r.into() + &(&h.into() * &self.secret.scalar);
+        let s = &r + &(&h * &self.secret.scalar);
 
         Signature { r: R, s }
     }
@@ -190,7 +190,7 @@ impl PublicKey {
         let minus_A = -&self.point;
 
         #[allow(non_snake_case)]
-        let R: CurvePoint = &(&signature.s * &CurvePoint::basepoint()) + &(&k * &minus_A);
+        let R: EdwardsPoint = &(&signature.s * &EdwardsPoint::basepoint()) + &(&k * &minus_A);
 
         if R.compressed() == signature.r {
             Ok(())
@@ -227,7 +227,7 @@ impl PublicKey {
         let minus_A = -&self.point;
 
         #[allow(non_snake_case)]
-        let R: CurvePoint = &(&signature.s * &CurvePoint::basepoint()) + &(&k * &minus_A);
+        let R: EdwardsPoint = &(&signature.s * &EdwardsPoint::basepoint()) + &(&k * &minus_A);
 
         if R.compressed() == signature.r {
             Ok(())
@@ -266,7 +266,7 @@ impl PublicKey {
         let minus_A = -&self.point;
 
         #[allow(non_snake_case)]
-        let R: CurvePoint = &(&signature.s * &CurvePoint::basepoint()) + &(&k * &minus_A);
+        let R: EdwardsPoint = &(&signature.s * &EdwardsPoint::basepoint()) + &(&k * &minus_A);
 
         if R.compressed() == signature.r {
             Ok(())
@@ -330,7 +330,7 @@ impl From<&[u8; SECRETKEY_SEED_LENGTH]> for SecretKey {
 impl From<&SecretKey> for PublicKey {
     fn from(secret: &SecretKey) -> PublicKey {
 
-        let point = &secret.scalar * &CurvePoint::basepoint();
+        let point = &secret.scalar * &EdwardsPoint::basepoint();
         let compressed = point.compressed();
 
         PublicKey { point, compressed }
@@ -520,6 +520,38 @@ mod tests {
         let s = &signature.s;
         assert_eq!(&s.0, manually_reduced_s);
         assert_ne!(&s.0, &nonreduced_sig[32..]);
+
+    }
+
+    #[test]
+    fn direct_agreement() {
+        let seed1: [u8; 32] = [
+            0x98, 0xa7, 0x02, 0x22, 0xf0, 0xb8, 0x12, 0x1a,
+            0xa9, 0xd3, 0x0f, 0x81, 0x3d, 0x68, 0x3f, 0x80,
+            0x9e, 0x46, 0x2b, 0x46, 0x9c, 0x7f, 0xf8, 0x76,
+            0x39, 0x49, 0x9b, 0xb9, 0x4e, 0x6d, 0xae, 0x41,
+        ];
+
+        let seed2: [u8; 32] = [
+            0x31, 0xf8, 0x50, 0x42, 0x46, 0x3c, 0x2a, 0x35,
+            0x5a, 0x20, 0x03, 0xd0, 0x62, 0xad, 0xf5, 0xaa,
+            0xa1, 0x0b, 0x8c, 0x61, 0xe6, 0x36, 0x06, 0x2a,
+            0xaa, 0xd1, 0x1c, 0x2a, 0x26, 0x08, 0x34, 0x06,
+        ];
+
+        let keypair1 = Keypair::from(&seed1);
+        let keypair2 = Keypair::from(&seed2);
+        let scalar1 = &keypair1.secret.scalar;
+        let scalar2 = &keypair2.secret.scalar;
+        let public1 = &keypair1.public.point;
+        let public2 = &keypair2.public.point;
+
+        let secret1 = scalar1 * public2;
+        let secret2 = scalar2 * public1;
+
+        assert_eq!(secret1.u(), secret2.u());
+        assert_eq!(secret1.x(), secret2.x());
+        assert_eq!(secret1.y(), secret2.y());
 
     }
 }

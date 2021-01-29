@@ -45,6 +45,10 @@ typedef enum {
    * Context for prehashed signatures too long
    */
   ContextTooLong,
+  /**
+   * Point is on other twist of curve
+   */
+  WrongTwist,
   _Extensible,
 } salty_Error;
 

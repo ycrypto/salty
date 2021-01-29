@@ -14,12 +14,6 @@ hex-literal = "0.2.1"
 panic-semihosting = { version = "0.5.3", features = ["exit"] }
 # subtle = { version = "2.2", default-features = false }
 
-[dependencies.salty]
-path = ".."
-
-[features]
-slow = ["salty/slow-motion"]
-
 [profile.release]
 codegen-units = 1
 debug = true

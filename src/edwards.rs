@@ -21,18 +21,19 @@ use crate::{
         FieldImplementation,
         FieldElement,
     },
+    montgomery::MontgomeryPoint,
     scalar::Scalar,
 };
 
 
 /// These represent the (X,Y,Z,T) coordinates
 #[derive(Clone,Copy,Debug,Default)]
-pub struct CurvePoint (
+pub struct EdwardsPoint (
     // TODO: maybe label them properly
     [FieldElement; 4]
 );
 
-/// "Compressed" form of a `CurvePoint`, whereby
+/// "Compressed" form of a `EdwardsPoint`, whereby
 /// the sign of the x-coordinate is stuffed in a
 /// spare bit of the y-coordinate
 #[derive(Clone,Copy,Debug,Default)]
@@ -57,7 +58,7 @@ impl CompressedY {
     ///
     /// [tweetnacl]: http://tweetnacl.cr.yp.to/tweetnacl-20140917.pdf
     /// [ed25519]: https://cryptojedi.org/papers/ed25519-20110926.pdf
-    pub fn decompressed(&self) -> Result<CurvePoint> {
+    pub fn decompressed(&self) -> Result<EdwardsPoint> {
         #![allow(non_snake_case)]
 
         // point = (X, Y, Z, T)
@@ -98,7 +99,7 @@ impl CompressedY {
         }
 
         let T = &X * &Y;
-        Ok(CurvePoint([X, Y, Z, T]))
+        Ok(EdwardsPoint([X, Y, Z, T]))
     }
     // static int unpackneg(gf r[4],const u8 p[32]) {
     //   // "load curve point"
@@ -137,18 +138,18 @@ impl CompressedY {
     // }
 }
 
-impl CurvePoint {
-    pub fn basepoint() -> CurvePoint {
-        CurvePoint([
-             FieldElement::BASEPOINT_X,
-             FieldElement::BASEPOINT_Y,
+impl EdwardsPoint {
+    pub fn basepoint() -> EdwardsPoint {
+        EdwardsPoint([
+             FieldElement::EDWARDS_BASEPOINT_X,
+             FieldElement::EDWARDS_BASEPOINT_Y,
              FieldElement::ONE,
-             &FieldElement::BASEPOINT_X * &FieldElement::BASEPOINT_Y,
+             &FieldElement::EDWARDS_BASEPOINT_X * &FieldElement::EDWARDS_BASEPOINT_Y,
         ])
     }
 
-    pub fn neutral_element() -> CurvePoint {
-        CurvePoint([
+    pub fn neutral_element() -> EdwardsPoint {
+        EdwardsPoint([
             FieldElement::ZERO,
             FieldElement::ONE,
             FieldElement::ONE,
@@ -171,13 +172,57 @@ impl CurvePoint {
 
         CompressedY(r)
     }
+
+    /// Convert this `EdwardsPoint` on the Edwards model to the
+    /// corresponding `MontgomeryPoint` on the Montgomery model.
+    ///
+    /// This function has one exceptional case; the identity point of
+    /// the Edwards curve is sent to the 2-torsion point \\((0,0)\\)
+    /// on the Montgomery curve.
+    ///
+    /// Note that this is a one-way conversion, since the Montgomery
+    /// model does not retain sign information.
+    pub fn to_montgomery(&self) -> MontgomeryPoint {
+        //// We have u = (1+y)/(1-y) = (Z+Y)/(Z-Y).
+        ////
+        //// The denominator is zero only when y=1, the identity point of
+        //// the Edwards curve.  Since 0.invert() = 0, in this case we
+        //// compute the 2-torsion point (0,0).
+        //let U = &self.Z + &self.Y;
+        //let W = &self.Z - &self.Y;
+        //let u = &U * &W.invert();
+        //MontgomeryPoint(u.to_bytes())
+        MontgomeryPoint(self.u())
+    }
+
+    /// The x-coordinate of the point
+    pub fn x(&self) -> FieldElement {
+        let z_inverse = &self.0[2].inverse();
+        let x = &self.0[0] * &z_inverse;
+        x
+    }
+
+    /// The y-coordinate of the point
+    pub fn y(&self) -> FieldElement {
+        let z_inverse = &self.0[2].inverse();
+        let y = &self.0[1] * &z_inverse;
+        y
+    }
+
+    /// The u-coordinate of the X25519 point
+    pub fn u(&self) -> FieldElement {
+        let y = self.y();
+        let one = FieldElement::ONE;
+        let u = &(&y + &one) * &(&y - &one).inverse();
+        u
+    }
 }
 
-impl<'a, 'b> Add<&'b CurvePoint> for &'a CurvePoint {
+impl<'a, 'b> Add<&'b EdwardsPoint> for &'a EdwardsPoint {
 
-    type Output = CurvePoint;
+    type Output = EdwardsPoint;
 
-    fn add(self, other: &'b CurvePoint) -> Self::Output {
+    fn add(self, other: &'b EdwardsPoint) -> Self::Output {
 
         let p = &self.0;
         let q = &other.0;
@@ -210,25 +255,25 @@ impl<'a, 'b> Add<&'b CurvePoint> for &'a CurvePoint {
             &e * &h,
         ];
 
-        CurvePoint(coordinates)
+        EdwardsPoint(coordinates)
     }
 }
 
-impl<'a> Neg for &'a CurvePoint {
-    type Output = CurvePoint;
+impl<'a> Neg for &'a EdwardsPoint {
+    type Output = EdwardsPoint;
 
-    fn neg(self) -> CurvePoint {
+    fn neg(self) -> EdwardsPoint {
         let p = &self.0;
-        CurvePoint([-&p[0], p[1], p[2], -&p[3]])
+        EdwardsPoint([-&p[0], p[1], p[2], -&p[3]])
     }
 }
 
-impl<'a, 'b> Mul<&'b CurvePoint> for &'a Scalar {
+impl<'a, 'b> Mul<&'b EdwardsPoint> for &'a Scalar {
 
-    type Output = CurvePoint;
+    type Output = EdwardsPoint;
 
-    fn mul(self, point: &'b CurvePoint) -> CurvePoint {
-        let mut p = CurvePoint([
+    fn mul(self, point: &'b EdwardsPoint) -> EdwardsPoint {
+        let mut p = EdwardsPoint([
             FieldElement::ZERO.clone(),
             FieldElement::ONE.clone(),
             FieldElement::ONE.clone(),
@@ -240,19 +285,19 @@ impl<'a, 'b> Mul<&'b CurvePoint> for &'a Scalar {
 
         for i in (0..=255).rev() {
             let b = (((scalar.0[i / 8] >> (i & 7)) & 1) as u8).into();
-            CurvePoint::conditional_swap(&mut p, &mut q, b);
+            EdwardsPoint::conditional_swap(&mut p, &mut q, b);
 
             q = &q + &p;
             p = &p + &p;
 
-            CurvePoint::conditional_swap(&mut p, &mut q, b);
+            EdwardsPoint::conditional_swap(&mut p, &mut q, b);
         }
 
         p
     }
 }
 
-impl ConditionallySelectable for CurvePoint {
+impl ConditionallySelectable for EdwardsPoint {
     fn conditional_select(p: &Self, q: &Self, choice: Choice) -> Self {
         let mut selection = Self::default();
 
@@ -290,7 +335,7 @@ impl PartialEq for CompressedY {
     }
 }
 
-impl ConstantTimeEq for CurvePoint {
+impl ConstantTimeEq for EdwardsPoint {
     fn ct_eq(&self, other: &Self) -> Choice {
         let self_compressed = self.compressed();
         let other_compressed = other.compressed();
@@ -298,7 +343,7 @@ impl ConstantTimeEq for CurvePoint {
     }
 }
 
-impl PartialEq for CurvePoint {
+impl PartialEq for EdwardsPoint {
     fn eq(&self, other: &Self) -> bool {
         bool::from(self.ct_eq(other))
     }
@@ -307,7 +352,7 @@ impl PartialEq for CurvePoint {
 #[cfg(test)]
 mod tests {
 
-    use super::CurvePoint;
+    use super::EdwardsPoint;
     use crate::Scalar;
 
     #[test]
@@ -319,14 +364,14 @@ mod tests {
             0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0,
         ]);
-        let ne = CurvePoint::neutral_element();
+        let ne = EdwardsPoint::neutral_element();
         assert_eq!(ne, &s * &ne);
     }
 
     #[test]
     fn test_addition_vs_multiplication() {
 
-        let p = CurvePoint::basepoint();
+        let p = EdwardsPoint::basepoint();
         let p_plus_p = &p + &p;
         let two = Scalar::from_bytes(&[
             2u8, 0, 0, 0, 0, 0, 0, 0,
@@ -349,8 +394,8 @@ mod tests {
             0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0,
         ]);
-        let bp = CurvePoint::basepoint();
-        let ne = CurvePoint::neutral_element();
+        let bp = EdwardsPoint::basepoint();
+        let ne = EdwardsPoint::neutral_element();
 
         let a = (1..=n).fold(ne, |partial_sum, _| &partial_sum + &bp);
         let b = &s * &bp;
@@ -360,10 +405,10 @@ mod tests {
 
     #[test]
     fn test_negation() {
-        let bp = CurvePoint::basepoint();
+        let bp = EdwardsPoint::basepoint();
         let minus_bp = -&bp;
         let maybe_neutral = &bp + &minus_bp;
 
-        assert_eq!(maybe_neutral, CurvePoint::neutral_element());
+        assert_eq!(maybe_neutral, EdwardsPoint::neutral_element());
     }
 }

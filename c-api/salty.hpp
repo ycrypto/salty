@@ -33,6 +33,8 @@ enum class salty_Error {
   SignatureInvalid,
   /// Context for prehashed signatures too long
   ContextTooLong,
+  /// Point is on the other twist of curve
+  WrongTwist,
   _Extensible,
 };
 

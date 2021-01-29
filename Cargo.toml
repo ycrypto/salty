@@ -1,6 +1,6 @@
 [package]
 name = "salty"
-version = "0.1.0-alpha.1"
+version = "0.2.0-alpha.0"
 authors = ["Nicolas Stalder <n@stalder.io>"]
 edition = "2018"
 description = "Small, sweet, swift Ed25519 signatures for microcontrollers"
@@ -12,7 +12,8 @@ keywords = ["no-std", "NaCl", "Ed25519", "cryptography", "signatures"]
 
 [dependencies]
 cosey = { version = "0.1.0-alpha.0", optional = true }
-subtle = { version = "2.2", default-features = false }
+subtle = { version = "2.4.0", default-features = false }
+zeroize = "1.2.0"
 
 [dev-dependencies]
 hex-literal = "0.2.1"

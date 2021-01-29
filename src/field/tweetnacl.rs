@@ -78,14 +78,14 @@ impl FieldImplementation for FieldElement {
         0xfce7, 0x56df, 0xd9dc, 0x2406,
     ]);
 
-    const BASEPOINT_X: Self = Self([
+    const EDWARDS_BASEPOINT_X: Self = Self([
         0xd51a, 0x8f25, 0x2d60, 0xc956,
         0xa7b2, 0x9525, 0xc760, 0x692c,
         0xdc5c, 0xfdd6, 0xe231, 0xc0a4,
         0x53fe, 0xcd6e, 0x36d3, 0x2169,
     ]);
 
-    const BASEPOINT_Y: Self = Self([
+    const EDWARDS_BASEPOINT_Y: Self = Self([
         0x6658, 0x6666, 0x6666, 0x6666,
         0x6666, 0x6666, 0x6666, 0x6666,
         0x6666, 0x6666, 0x6666, 0x6666,
@@ -97,6 +97,20 @@ impl FieldImplementation for FieldElement {
         0xe478, 0xad2f, 0x1806, 0x2f43,
         0xd7a7, 0x3dfb, 0x0099, 0x2b4d,
         0xdf0b, 0x4fc1, 0x2480, 0x2b83,
+    ]);
+
+    const APLUS2_OVER_FOUR: Self = Self([
+        121666, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+    ]);
+
+    const MONTGOMERY_BASEPOINT_U: Self = Self([
+        9, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
     ]);
 
     fn to_bytes(&self) -> [u8; 32] {

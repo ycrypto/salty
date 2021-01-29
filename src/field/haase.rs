@@ -89,6 +89,11 @@ impl FieldImplementation for FieldElement {
         0x4fc1df0b, 0x2b832480,
     ]);
 
+    const APLUS2_OVER_FOUR: Self = Self([
+        121666, 0, 0, 0,
+        0, 0, 0, 0,
+    ]);
+
     fn to_bytes(&self) -> [u8; 32] {
         // make our own private copy
         let mut fe = self.clone();

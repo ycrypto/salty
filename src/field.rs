@@ -77,9 +77,11 @@ where
     const ONE: Self;
     const D: Self;
     const D2: Self;
-    const BASEPOINT_X: Self;
-    const BASEPOINT_Y: Self;
+    const APLUS2_OVER_FOUR: Self;
+    const EDWARDS_BASEPOINT_X: Self;
+    const EDWARDS_BASEPOINT_Y: Self;
     const I: Self;
+    const MONTGOMERY_BASEPOINT_U: Self;
 
     // /// swap p and q iff b is true, in constant time
     // // TODO: would be great to mark this with an attribute

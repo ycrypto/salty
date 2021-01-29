@@ -160,6 +160,9 @@ pub enum Error {
     /// Context for prehashed signatures too long
     ContextTooLong,
 
+    /// Point is on other twist of curve
+    WrongTwist,
+
     #[doc(hidden)]
     _Extensible,
 }
@@ -167,7 +170,12 @@ pub enum Error {
 /// Result type for all `salty` operations.
 pub type Result<T = ()> = core::result::Result<T, Error>;
 
+pub mod agreement;
+
 pub mod constants;
+
+mod edwards;
+pub use edwards::{EdwardsPoint, CompressedY};
 
 /// Self-contained implementation of SHA512
 mod hash;
@@ -177,13 +185,13 @@ pub use hash::Sha512;
 mod field;
 pub use field::{FieldElement, FieldImplementation};
 
+mod montgomery;
+pub use montgomery::MontgomeryPoint;
+
 mod scalar29;
 
 mod scalar;
 pub use scalar::Scalar;
-
-mod curve;
-pub use curve::{CurvePoint, CompressedY};
 
 mod signature;
 pub use signature::{SecretKey, PublicKey, Keypair, Signature};
