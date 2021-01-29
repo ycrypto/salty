@@ -98,6 +98,12 @@ where
     /// to canonical representation as little-endian bytes
     fn to_bytes(&self) -> [u8; 32];
 
+    /// construct from possibly non-canonical representation as little-endian bytes
+    fn from_unreduced_bytes(bytes: &[u8; 32]) -> Self {
+        let unreduced = Self::from_bytes_unchecked(bytes);
+        Self::from_bytes_unchecked(&unreduced.to_bytes())
+    }
+
     /// construct from canonical representation as little-endian bytes
     fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self;
 

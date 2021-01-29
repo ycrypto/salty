@@ -8,11 +8,15 @@ pub use salty::{
     Error,
     Result,
     constants::{
+        FIELD_ELEMENT_LENGTH,
         SECRETKEY_SEED_LENGTH,
         PUBLICKEY_SERIALIZED_LENGTH,
         SIGNATURE_SERIALIZED_LENGTH,
         SHA512_LENGTH,
     },
+};
+
+use salty::{
     Keypair,
     // SecretKey,
     PublicKey,
@@ -171,5 +175,16 @@ pub unsafe extern "C" fn salty_verify_prehashed(
         return verification.err().unwrap()
     }
     return Error::NoError;
+}
+
+#[no_mangle]
+/// Perform X25519 key agreement.
+pub unsafe extern "C" fn salty_agree(
+    scalar: &[u8; SECRETKEY_SEED_LENGTH],
+    input_u: &[u8; FIELD_ELEMENT_LENGTH],
+    output_u: &mut [u8; FIELD_ELEMENT_LENGTH],
+) {
+    let shared_secret = salty::agreement::x25519(*scalar, *input_u);
+    output_u.copy_from_slice(&shared_secret);
 }
 

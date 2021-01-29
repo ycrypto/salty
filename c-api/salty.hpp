@@ -10,6 +10,7 @@
 
 static const uintptr_t salty_COMPRESSED_Y_LENGTH = 32;
 static const uintptr_t salty_PUBLICKEY_SERIALIZED_LENGTH = 32;
+static const uintptr_t salty_FIELD_ELEMENT_LENGTH = 32;
 static const uintptr_t salty_SCALAR_LENGTH = 32;
 static const uintptr_t salty_SECRETKEY_NONCE_LENGTH = 32;
 static const uintptr_t salty_SECRETKEY_SCALAR_LENGTH = 32;
@@ -70,6 +71,10 @@ salty_Error salty_verify_prehashed(const uint8_t (*public_key)[salty_PUBLICKEY_S
                                    const uint8_t (*signature)[salty_SIGNATURE_SERIALIZED_LENGTH],
                                    const uint8_t *context_ptr,
                                    uintptr_t context_len);
+/// Perform X25519 key agreement.
+void salty_agree(const uint8_t (*scalar)[salty_SECRETKEY_SEED_LENGTH],
+                 const uint8_t (*input_u)[salty_FIELD_ELEMENT_LENGTH],
+                 uint8_t (*output_u)[salty_FIELD_ELEMENT_LENGTH]);
 
 } // extern "C"
 

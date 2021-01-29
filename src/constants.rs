@@ -3,8 +3,11 @@ pub const SHA256_LENGTH: usize = 64;
 /// the length of a SHA512 digest
 pub const SHA512_LENGTH: usize = 64;
 
-/// the length of a scalar (module structure on Edwards25519 curve)
+/// the length of a scalar (module structure on Curve25519)
 pub const SCALAR_LENGTH: usize = 32;
+
+/// the length of a field element (base field of Curve25519)
+pub const FIELD_ELEMENT_LENGTH: usize = 32;
 
 /// the length of the seed part of a secret key (internal)
 pub const SECRETKEY_SEED_LENGTH: usize = 32;

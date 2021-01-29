@@ -123,10 +123,6 @@ impl MontgomeryPoint {
 
     pub fn basepoint() -> Self {
         Self(FieldElement::MONTGOMERY_BASEPOINT_U)
-             // FieldElement::BASEPOINT_Y,
-             // FieldElement::ONE,
-             // &FieldElement::BASEPOINT_X * &FieldElement::BASEPOINT_Y,
-        // ])
     }
 
 }
@@ -253,26 +249,44 @@ impl<'a, 'b> Mul<&'b Scalar> for &'a MontgomeryPoint {
             W: FieldElement::ONE,
         };
 
-        // TODO(really!!): check if the bits wanted here do actually correspond
-        // with the construction copy-pasted out of edwards.rs
-        //
-        // let bits: [i8; 256] = scalar.bits();
+        let bits: [i8; 256] = scalar.bits();
 
         for i in (0..255).rev() {
-            // let choice: u8 = (bits[i + 1] ^ bits[i]) as u8;
-            // let b = (((scalar.0[i / 8] >> (i & 7)) & 1) as u8).into();
-            let choice = (((scalar.0[i / 8] >> (i & 7)) & 1) as u8).into();
+            let choice: u8 = (bits[i + 1] ^ bits[i]) as u8;
+            debug_assert!(choice == 0 || choice == 1);
 
-            // debug_assert!(choice == 0 || choice == 1);
-
-            ProjectivePoint::conditional_swap(&mut x0, &mut x1, choice);
+            ProjectivePoint::conditional_swap(&mut x0, &mut x1, choice.into());
             differential_add_and_double(&mut x0, &mut x1, &affine_u);
         }
-        // ProjectivePoint::conditional_swap(&mut x0, &mut x1, Choice::from(bits[0] as u8));
-        ProjectivePoint::conditional_swap(&mut x0, &mut x1, Choice::from((scalar.0[0] & 1) as u8));
+        ProjectivePoint::conditional_swap(&mut x0, &mut x1, Choice::from(bits[0] as u8));
 
         x0.to_affine()
     }
+
+    ///// Given `self` \\( = u\_0(P) \\), and a `Scalar` \\(n\\), return \\( u\_0([n]P) \\).
+    //fn mul(self, scalar: &'b Scalar) -> MontgomeryPoint {
+    //    // Algorithm 8 of Costello-Smith 2017
+    //    let affine_u = self.0;
+    //    let mut x0 = ProjectivePoint::neutral_element();
+    //    let mut x1 = ProjectivePoint {
+    //        U: affine_u,
+    //        W: FieldElement::ONE,
+    //    };
+
+    //    // TODO(really!!): check if the bits wanted here do actually correspond
+    //    // with the construction copy-pasted out of edwards.rs
+    //    //
+    //    let bits: [i8; 256] = scalar.bits();
+
+    //    for i in (0..255).rev() {
+    //        let choice = (((scalar.0[i / 8] >> (i & 7)) & 1) as u8).into();
+    //        ProjectivePoint::conditional_swap(&mut x0, &mut x1, choice);
+    //        differential_add_and_double(&mut x0, &mut x1, &affine_u);
+    //    }
+    //    ProjectivePoint::conditional_swap(&mut x0, &mut x1, Choice::from((scalar.0[0] & 1) as u8));
+
+    //    x0.to_affine()
+    //}
 }
 
 impl<'b> MulAssign<&'b Scalar> for MontgomeryPoint {

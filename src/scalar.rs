@@ -211,6 +211,17 @@ impl Scalar {
         self.0
     }
 
+    /// Get the bits of the scalar.
+    pub(crate) fn bits(&self) -> [i8; 256] {
+        let mut bits = [0i8; 256];
+        for i in 0..256 {
+            // As i runs from 0..256, the bottom 3 bits index the bit,
+            // while the upper bits index the byte.
+            bits[i] = ((self.0[i>>3] >> (i&7)) & 1u8) as i8;
+        }
+        bits
+    }
+
     pub fn from_u256_le(x: &U256le) -> Scalar {
         // TweetNaclScalar::from(&Scalar(*x)).reduce_modulo_ell()
         // Temporarily allow s_unreduced.bytes > 2^255 ...
