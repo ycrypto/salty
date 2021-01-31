@@ -290,7 +290,7 @@ impl PublicKey {
 impl Into<CosePublicKey> for PublicKey {
     fn into(self) -> CosePublicKey {
         CosePublicKey {
-            x: cosey::Bytes::try_from_slice(&self.as_bytes()[..]).unwrap(),
+            x: cosey::ByteBuf::try_from_slice(&self.as_bytes()[..]).unwrap(),
         }
     }
 }
