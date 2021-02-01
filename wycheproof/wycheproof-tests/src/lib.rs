@@ -41,12 +41,14 @@ pub struct SignatureTestVector {
 
 impl ToTokens for SignatureTestVector {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let tc_id = &self.tc_id;
-        let comment = &self.comment;
-        let msg = &self.msg;
-        let sig = &self.sig;
-        let result = &self.result;
-        let flags = &self.flags;
+        let Self {
+            tc_id,
+            comment,
+            msg,
+            sig,
+            result,
+            flags,
+        } = self;
 
         let code = quote!{
             SignatureTestVector {
@@ -61,6 +63,50 @@ impl ToTokens for SignatureTestVector {
         code.to_tokens(tokens);
     }
 }
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all="camelCase")]
+pub struct XdhTestVector {
+    pub tc_id: u32,
+    pub comment: String,
+    #[serde(with = "hex_serde")]
+    pub public: Vec<u8>,
+    #[serde(with = "hex_serde")]
+    pub private: Vec<u8>,
+    #[serde(with = "hex_serde")]
+    pub shared: Vec<u8>,
+    pub result: ExpectedResult,
+    pub flags: Vec<String>,
+}
+
+impl ToTokens for XdhTestVector {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let Self {
+            tc_id,
+            comment,
+            public,
+            private,
+            shared,
+            result,
+            flags,
+        } = self;
+
+        let code = quote!{
+            XdhTestVector {
+                tc_id: #tc_id,
+                comment: &#comment,
+                public: &[ #(#public),* ],
+                private: &[ #(#private),* ],
+                shared: &[ #(#shared),* ],
+                result: &#result,
+                flags: &[ #(#flags), *],
+            }
+        };
+        code.to_tokens(tokens);
+    }
+}
+
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all="camelCase")]
 pub struct Key {
@@ -76,11 +122,13 @@ pub struct Key {
 
 impl ToTokens for Key {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let curve = &self.curve;
-        let key_size = &self.key_size;
-        let pk = &self.pk;
-        let sk = &self.sk;
-        let kind = &self.kind;
+        let Self {
+            curve,
+            key_size,
+            pk,
+            sk,
+            kind,
+        } = self;
 
         let code = quote!{
             Key {
@@ -94,57 +142,72 @@ impl ToTokens for Key {
         code.to_tokens(tokens);
     }
 }
+
 #[derive(Serialize, Deserialize)]
-pub struct EddsaTestGroup {
-    #[serde(rename="type")]
-    pub kind: String,
-    //jwk,
-    //key_der,
-    //key_pem,
-    pub key: Key,
-    pub tests: Vec<SignatureTestVector>,
+#[serde(tag="type")]
+pub enum TestGroup {
+    EddsaVerify {
+        key: Key,
+        tests: Vec<SignatureTestVector>,
+    },
+    XdhComp {
+        curve: String,
+        tests: Vec<XdhTestVector>,
+    }
 }
 
-impl ToTokens for EddsaTestGroup {
+impl ToTokens for TestGroup {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let kind = &self.kind;
-        let key = &self.key;
-        let tests = &self.tests;
+        match &self {
+            TestGroup::EddsaVerify { key, tests } => {
+                let code = quote!{
+                    TestGroup::EddsaVerify {
+                        key: &#key,
+                        tests: &[ #(&#tests),* ]
+                    }
+                };
+                code.to_tokens(tokens);
+            },
 
-        let code = quote!{
-            EddsaTestGroup {
-                kind: &#kind,
-                key: &#key,
-                tests: &[ #(&#tests),* ]
+            TestGroup::XdhComp { curve, tests } => {
+                let code = quote!{
+                    TestGroup::XdhComp {
+                        curve: &#curve,
+                        tests: &[ #(&#tests),* ]
+                    }
+                };
+                code.to_tokens(tokens);
             }
-        };
-        code.to_tokens(tokens);
+        }
     }
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all="camelCase")]
-pub struct EddsaTest {
+pub struct WycheproofTest {
     pub algorithm: String,
     pub generator_version: String,
     pub header: Vec<String>,
     pub notes: HashMap<String, String>,
     pub number_of_tests: u32,
     pub schema: String,
-    pub test_groups: Vec<EddsaTestGroup>,
+    pub test_groups: Vec<TestGroup>,
 }
 
-impl ToTokens for EddsaTest {
+impl ToTokens for WycheproofTest {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let algorithm = &self.algorithm;
-        let generator_version = &self.generator_version;
-        let header = &self.header;
-        let number_of_tests = &self.number_of_tests;
-        let schema = &self.schema;
-        let test_groups = &self.test_groups;
+        let Self {
+            algorithm,
+            generator_version,
+            header,
+            notes: _,
+            number_of_tests,
+            schema,
+            test_groups
+        } = self;
 
         let code = quote!{
-            EddsaTest {
+            WycheproofTest {
                 algorithm: &#algorithm,
                 generator_version: &#generator_version,
                 header: &[ #(&#header),* ],

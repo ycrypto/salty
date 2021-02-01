@@ -1,9 +1,9 @@
 [package]
-name = "eddsa-tests"
+name = "wycheproof-tests"
 version = "0.1.0"
 authors = ["Enrik Berkhan <Enrik.Berkhan@inka.de>"]
 edition = "2018"
-description = "Project Wycheproof EDDSA tests for salty: JSON parser."
+description = "Project Wycheproof tests for salty: JSON parser."
 license = "Apache-2.0 OR MIT"
 
 [dependencies]

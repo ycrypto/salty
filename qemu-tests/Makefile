@@ -4,18 +4,18 @@ main-test:
 ../tests/eddsa_test.json:
 	$(MAKE) -C .. tests/eddsa_test.json
 
-test: ../tests/eddsa_test.json
+../tests/x25519_test.json:
+	$(MAKE) -C .. tests/x25519_test.json
+
+test: ../tests/eddsa_test.json ../tests/x25519_test.json
 	@echo "\nTesting Haase field implementation, debug build\n"
 	time cargo run --bin qemu-tests
 	@echo "\nTesting Haase field implementation, release build\n"
 	time cargo run --bin qemu-tests --release
-	# @echo "\nTesting TweetNaCl field implementation, debug build"
-	# @echo "Patience please, this is veeery slow :)\n"
-	# time cargo run --bin qemu-tests --features slow
-	@echo "\nTesting TweetNaCl field implementation, release build\n"
-	time cargo run --bin qemu-tests --features slow --release
 	@echo "\nRunnine project Wycheproof EDDSA tests, release build\n"
-	time cargo run --bin wycheproof --release
+	time cargo run --bin eddsa_verify --release
+	@echo "\nRunnine project Wycheproof X25519 tests, release build\n"
+	time cargo run --bin x25519_comp --release
 
 size: build
 	arm-none-eabi-size $(KERNEL)
