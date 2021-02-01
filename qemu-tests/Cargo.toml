@@ -28,5 +28,9 @@ name = "qemu-tests"
 path = "src/main.rs"
 
 [[bin]]
-name = "wycheproof"
-path = "src/bin/wycheproof_on_target/main.rs"
+name = "eddsa_verify"
+path = "src/bin/eddsa_verify_on_target/main.rs"
+
+[[bin]]
+name = "x25519_comp"
+path = "src/bin/x25519_on_target/main.rs"

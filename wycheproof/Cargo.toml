@@ -3,7 +3,7 @@ name = "wycheproof"
 version = "0.1.0"
 authors = ["Enrik Berkhan <Enrik.Berkhan@inka.de>"]
 edition = "2018"
-description = "Project Wycheproof EDDSA tests for salty."
+description = "Project Wycheproof tests for salty."
 license = "Apache-2.0 OR MIT"
 
 [dependencies]
@@ -12,4 +12,4 @@ wycheproof-gen = { path = "wycheproof-gen" }
 [build-dependencies]
 
 [workspace]
-members = [ "eddsa-tests", "wycheproof-gen" ]
+members = [ "wycheproof-tests", "wycheproof-gen" ]

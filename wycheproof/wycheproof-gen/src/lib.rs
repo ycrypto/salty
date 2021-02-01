@@ -4,7 +4,7 @@ use quote::{quote, ToTokens};
 use syn::{parse_macro_input, Token, LitStr, ItemFn};
 use syn::parse::{Parse, ParseStream, Result};
 
-use eddsa_tests;
+use wycheproof_tests;
 
 struct TestDataArgs {
     fname: LitStr,
@@ -24,11 +24,11 @@ impl Parse for TestDataArgs {
 }
 
 #[proc_macro]
-pub fn generate_eddsa_data(input: TokenStream) -> TokenStream {
+pub fn generate_data(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as TestDataArgs);
 
     let testdata = std::fs::read_to_string(input.fname.value()).unwrap();
-    let test: eddsa_tests::EddsaTest = serde_json::from_str(&testdata).unwrap();
+    let test: wycheproof_tests::WycheproofTest = serde_json::from_str(&testdata).unwrap();
 
     if test.schema != input.schema.value() {
         panic!("JSON schemas do not match!");
@@ -41,11 +41,11 @@ pub fn generate_eddsa_data(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_attribute]
-pub fn test_eddsa(args: TokenStream, func: TokenStream) -> TokenStream {
+pub fn test_wycheproof(args: TokenStream, func: TokenStream) -> TokenStream {
     let TestDataArgs { fname, schema } = parse_macro_input!(args as TestDataArgs);
 
     let testdata = std::fs::read_to_string(fname.value()).unwrap();
-    let testdata: eddsa_tests::EddsaTest = serde_json::from_str(&testdata).unwrap();
+    let testdata: wycheproof_tests::WycheproofTest = serde_json::from_str(&testdata).unwrap();
 
     if testdata.schema != schema.value() {
         panic!("JSON schemas do not match!");
@@ -57,17 +57,36 @@ pub fn test_eddsa(args: TokenStream, func: TokenStream) -> TokenStream {
     let func_ident = func_ast.sig.ident;
 
     for testgroup in &testdata.test_groups {
-        for testcase in &testgroup.tests {
-            let test_name = format!("{}_{}", func_ident.to_string(), testcase.tc_id);
-            let test_ident = proc_macro2::Ident::new(&test_name, proc_macro2::Span::call_site());
-            let item = quote! {
-                #[test]
-                fn # test_ident () {
-                    # func_ident ( & # testgroup, & # testcase);
-                }
-            };
+        match testgroup {
+            wycheproof_tests::TestGroup::EddsaVerify{key, tests} => {
+                for testcase in tests {
+                    let test_name = format!("{}_{}", func_ident.to_string(), testcase.tc_id);
+                    let test_ident = proc_macro2::Ident::new(&test_name, proc_macro2::Span::call_site());
+                    let item = quote! {
+                        #[test]
+                        fn # test_ident () {
+                            # func_ident ( & # key, & # testcase);
+                        }
+                    };
 
-            item.to_tokens(&mut func_copy);
+                    item.to_tokens(&mut func_copy);
+                }
+            },
+
+            wycheproof_tests::TestGroup::XdhComp{curve, tests} => {
+                for testcase in tests {
+                    let test_name = format!("{}_{}", func_ident.to_string(), testcase.tc_id);
+                    let test_ident = proc_macro2::Ident::new(&test_name, proc_macro2::Span::call_site());
+                    let item = quote! {
+                        #[test]
+                        fn # test_ident () {
+                            # func_ident ( & # curve, & # testcase);
+                        }
+                    };
+
+                    item.to_tokens(&mut func_copy);
+                }
+            },
         }
     }
 
