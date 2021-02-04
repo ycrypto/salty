@@ -46,6 +46,13 @@ impl PublicKey {
     // }
 }
 
+impl SharedSecret {
+    #[inline]
+    pub fn to_bytes(&self) -> [u8; 32] {
+        self.0.to_bytes()
+    }
+}
+
 impl SecretKey {
     /// Perform a Diffie-Hellman key agreement between `self` and
     /// `their_public` key to produce a `SharedSecret`.
