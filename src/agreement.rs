@@ -1,4 +1,5 @@
 //! 99.9% cribbed from x25519-dalek
+use core::convert::TryFrom;
 
 use crate::{
     constants::SECRETKEY_SEED_LENGTH,
@@ -8,6 +9,7 @@ use crate::{
     },
     montgomery::MontgomeryPoint,
     scalar::Scalar,
+    Result,
 };
 
 #[derive(PartialEq, Eq, /*Hash,*/ Copy, Clone, Debug)]
@@ -25,10 +27,13 @@ pub struct SecretKey(pub(crate) Scalar);
 // #[zeroize(drop)]
 pub struct SharedSecret(pub(crate) MontgomeryPoint);
 
-impl From<[u8; 32]> for PublicKey {
-    /// Given a byte array, construct a x25519 `PublicKey`.
-    fn from(bytes: [u8; 32]) -> PublicKey {
-        PublicKey(MontgomeryPoint(FieldElement::from_bytes(&bytes).unwrap()))
+impl TryFrom<[u8; 32]> for PublicKey {
+    type Error = crate::Error;
+    /// Given a byte array, construct a x25519 `PublicKey`. It may fail if some
+    /// underlying checks fail.
+    fn try_from(bytes: [u8; 32]) -> Result<Self> {
+        let field_element = FieldElement::from_bytes(&bytes)?;
+        Ok(PublicKey(MontgomeryPoint(field_element)))
     }
 }
 
