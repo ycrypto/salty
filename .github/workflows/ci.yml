@@ -1,0 +1,51 @@
+# Note: to work on CI, use https://github.com/nektos/act 👍
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  # need atomic CAS, so Cortex-M0/1 are out
+  QEMU_TARGET: thumbv7m-none-eabi
+
+jobs:
+  test:
+    # want QEMU >=4
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Install build dependencies
+        shell: bash
+        run: |
+          sudo apt-get update -y -qq >/dev/null
+          sudo apt-get install -y -qq llvm libc6-dev-i386 libclang-dev make >/dev/null
+          cc --version
+
+      - name: Check that all crates build without warning
+        run: RUSTFLAGS='--deny warnings' cargo check --all
+        shell: bash
+
+      # - name: Check clippy output (lenient mode)
+      #   # run: RUSTFLAGS='--deny warnings' cargo clippy --all
+      #   run: cargo clippy --all
+      #   shell: bash
+
+      - name: Install QEMU (>=4)
+        run: |
+          sudo apt-get update -qq >/dev/null
+          sudo apt-get install -qq qemu-system-arm >/dev/null
+          qemu-system-arm --version
+
+      - name: Run all of the tests, including QEMU tests
+        run: make test
+
