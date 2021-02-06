@@ -31,6 +31,7 @@ tests/x25519_test.json:
 
 test: tests/eddsa_test.json tests/x25519_test.json
 	cargo test
+	make -C qemu-tests test
 
 .PHONY: venv
 # re-run as necessary

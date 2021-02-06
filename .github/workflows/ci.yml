@@ -18,27 +18,38 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
+      - name: Install build dependencies
+        shell: bash
+        run: |
+          sudo apt-get update -y -qq >/dev/null
+          sudo apt-get install -y -qq llvm libc6-dev-i386 libclang-dev make time >/dev/null
+          cc --version
+
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
           override: true
-
-      - name: Install build dependencies
-        shell: bash
-        run: |
-          sudo apt-get update -y -qq >/dev/null
-          sudo apt-get install -y -qq llvm libc6-dev-i386 libclang-dev make >/dev/null
-          cc --version
-
       - name: Check that all crates build without warning
         run: RUSTFLAGS='--deny warnings' cargo check --all
         shell: bash
-
       # - name: Check clippy output (lenient mode)
       #   # run: RUSTFLAGS='--deny warnings' cargo clippy --all
       #   run: cargo clippy --all
       #   shell: bash
+      - name: Build PC
+        run: cargo build --release
+        shell: bash
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: thumbv7em-none-eabi
+          override: true
+      - name: Build Cortex-M4
+        run: cargo build --release --target thumbv7em-none-eabi
+        shell: bash
 
       - name: Install QEMU (>=4)
         run: |
@@ -46,6 +57,13 @@ jobs:
           sudo apt-get install -qq qemu-system-arm >/dev/null
           qemu-system-arm --version
 
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: thumbv8m.main-none-eabi
+          override: true
       - name: Run all of the tests, including QEMU tests
         run: make test
+        shell: bash
 

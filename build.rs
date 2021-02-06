@@ -42,7 +42,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let out_dir = std::path::PathBuf::from(std::env::var("OUT_DIR").unwrap());
         std::fs::copy("bin/salty-asm.a", out_dir.join("libsalty-asm.a")).unwrap();
 
-        println!("cargo:rustc-link-lib=static={}", "salty-asm");
+        println!("cargo:rustc-link-lib=static=salty-asm");
         println!("cargo:rustc-link-search={}", out_dir.display());
 
         println!("cargo:rerun-if-changed=bin/salty-asm.a");
