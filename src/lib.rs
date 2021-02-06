@@ -193,7 +193,9 @@ mod scalar29;
 mod scalar;
 pub use scalar::Scalar;
 
-mod signature;
+pub mod signature;
+// TODO: rename these (and handle the API-breaking consequences)
+// It's confusing now that we have both Edwards and Montgomery points.
 pub use signature::{SecretKey, PublicKey, Keypair, Signature};
 #[cfg(feature = "cose")]
 pub use signature::CosePublicKey;

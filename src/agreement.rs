@@ -15,6 +15,10 @@ use crate::{
 #[derive(PartialEq, Eq, /*Hash,*/ Copy, Clone, Debug)]
 pub struct PublicKey(pub(crate) MontgomeryPoint);
 
+/// A X25519 secret key.
+///
+/// This is a wrapper around a `Scalar`. To obtain the corresponding `PublicKey`,
+/// use `PublicKey::from(&secret_key)`.
 // #[derive(Zeroize)]
 // #[zeroize(drop)]
 #[derive(Clone/*, Zeroize*/)]
@@ -34,6 +38,14 @@ impl TryFrom<[u8; 32]> for PublicKey {
     fn try_from(bytes: [u8; 32]) -> Result<Self> {
         let field_element = FieldElement::from_bytes(&bytes)?;
         Ok(PublicKey(MontgomeryPoint(field_element)))
+    }
+}
+
+impl<'a> From<&'a SecretKey> for PublicKey {
+    /// Given an x25519 [`SecretKey`] key, compute its corresponding [`PublicKey`].
+    fn from(secret: &'a SecretKey) -> PublicKey {
+        let public_point = &secret.0 * &MontgomeryPoint::basepoint();
+        PublicKey(public_point)
     }
 }
 
@@ -150,8 +162,8 @@ mod tests {
         let sk1 = SecretKey::from_seed(&seed1);
         let sk2 = SecretKey::from_seed(&seed2);
 
-        let pk1 = PublicKey(&sk1.0 * &MontgomeryPoint::basepoint());
-        let pk2 = PublicKey(&sk2.0 * &MontgomeryPoint::basepoint());
+        let pk1 = PublicKey::from(&sk1);
+        let pk2 = PublicKey::from(&sk2);
 
         let shared1 = sk1.agree(&pk2);
         let shared2 = sk2.agree(&pk1);
