@@ -279,4 +279,32 @@ impl Scalar {
     pub fn is_canonical(&self) -> bool {
         *self == self.reduce()
     }
+
+    pub fn one() -> Self {
+        Self::from(1u64)
+    }
+}
+
+impl From<u64> for Scalar {
+    fn from(scalar: u64) -> Self {
+        let mut scalar_le = [0u8; 32];
+        scalar_le[..8].copy_from_slice(&scalar.to_le_bytes());
+        Scalar::from_u256_le(&scalar_le)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn from_unsigned() {
+        let one = Scalar::one();
+        let two = &one + &one;
+        let three = &two + &one;
+        let five = &two + &three;
+
+        assert_eq!(five, Scalar::from(5u64));
+
+    }
 }

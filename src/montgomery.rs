@@ -303,3 +303,18 @@ impl<'a, 'b> Mul<&'b MontgomeryPoint> for &'a Scalar {
     }
 }
 
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn to_edwards() {
+        let edwards_basepoint = crate::edwards::EdwardsPoint::basepoint();
+        let montgomery_basepoint = MontgomeryPoint::basepoint();
+
+        assert_eq!(edwards_basepoint, montgomery_basepoint.to_edwards(0).unwrap());
+
+        let scalar = Scalar::from(123456);
+        assert_eq!(&scalar * &edwards_basepoint, (&scalar * &montgomery_basepoint).to_edwards(1).unwrap());
+    }
+}
