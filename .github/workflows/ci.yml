@@ -26,6 +26,7 @@ jobs:
           cc --version
 
       - uses: actions-rs/toolchain@v1
+        name: Install Rust stable/x86_64-unknown-linux-gnu
         with:
           profile: minimal
           toolchain: stable
@@ -42,6 +43,7 @@ jobs:
         shell: bash
 
       - uses: actions-rs/toolchain@v1
+        name: Install Rust stable/thumbv7em-none-eabi
         with:
           profile: minimal
           toolchain: stable
@@ -58,6 +60,7 @@ jobs:
           qemu-system-arm --version
 
       - uses: actions-rs/toolchain@v1
+        name: Install Rust stable/thumbv8m.main-none-eabi
         with:
           profile: minimal
           toolchain: stable

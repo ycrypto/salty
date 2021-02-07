@@ -213,7 +213,7 @@ impl EdwardsPoint {
     pub fn u(&self) -> FieldElement {
         let y = self.y();
         let one = FieldElement::ONE;
-        let u = &(&y + &one) * &(&y - &one).inverse();
+        let u = &(&y + &one) * &(&one - &y).inverse();
         u
     }
 }
@@ -410,5 +410,16 @@ mod tests {
         let maybe_neutral = &bp + &minus_bp;
 
         assert_eq!(maybe_neutral, EdwardsPoint::neutral_element());
+    }
+
+    #[test]
+    fn to_montgomery() {
+        let edwards_basepoint = EdwardsPoint::basepoint();
+        let montgomery_basepoint = crate::montgomery::MontgomeryPoint::basepoint();
+
+        assert_eq!(edwards_basepoint.to_montgomery(), montgomery_basepoint);
+
+        let scalar = Scalar::from(123456);
+        assert_eq!((&scalar * &edwards_basepoint).to_montgomery(), &scalar * &montgomery_basepoint);
     }
 }
