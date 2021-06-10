@@ -1,2 +1,2 @@
-libsalty*.a
 /target
+libsalty-debug.a
