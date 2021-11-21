@@ -176,6 +176,13 @@ impl Keypair {
     }
 }
 
+impl signature::Signer<ed25519::Signature> for Keypair {
+    fn try_sign(&self, msg: &[u8]) -> core::result::Result<ed25519::Signature, signature::Error> {
+        use core::convert::TryInto;
+        self.sign(msg).try_into()
+    }
+}
+
 impl PublicKey {
     pub fn verify(&self, message: &[u8], signature: &Signature) -> Result {
         let hash = Sha512::new()
@@ -277,6 +284,18 @@ impl PublicKey {
 
 }
 
+impl signature::Verifier<ed25519::Signature> for PublicKey {
+    fn verify(&self, msg: &[u8], signature: &ed25519::Signature)
+        -> core::result::Result<(), signature::Error> {
+        let bytes = signature.to_bytes();
+        if self.verify(msg, &(&bytes).into()).is_ok() {
+            Ok(())
+        } else {
+            Err(signature::Error::new())
+        }
+    }
+}
+
 impl PublicKey {
     pub fn as_bytes(&self) -> &[u8; 32] {
         &self.compressed.as_bytes()
@@ -371,6 +390,22 @@ impl From<&[u8; SIGNATURE_SERIALIZED_LENGTH]> for Signature {
     }
 
 }
+
+impl From<ed25519::Signature> for Signature {
+    fn from(sig: ed25519::Signature) -> Signature {
+        (&sig.to_bytes()).into()
+    }
+}
+
+impl TryFrom<Signature> for ed25519::Signature {
+    type Error = signature::Error;
+
+    fn try_from(sig: Signature) -> core::result::Result<ed25519::Signature, Self::Error> {
+        use core::convert::TryInto;
+        (&sig.to_bytes()[..]).try_into()
+    }
+}
+
 
 impl Signature {
     pub fn to_bytes(&self) -> [u8; SIGNATURE_SERIALIZED_LENGTH] {
