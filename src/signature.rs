@@ -1,5 +1,3 @@
-use core::convert::TryFrom;
-
 #[cfg(feature = "cose")]
 pub use cosey::Ed25519PublicKey as CosePublicKey;
 
@@ -176,8 +174,8 @@ impl Keypair {
     }
 }
 
-impl signature::Signer<ed25519::Signature> for Keypair {
-    fn try_sign(&self, msg: &[u8]) -> core::result::Result<ed25519::Signature, signature::Error> {
+impl ed25519::signature::Signer<ed25519::Signature> for Keypair {
+    fn try_sign(&self, msg: &[u8]) -> core::result::Result<ed25519::Signature, ed25519::signature::Error> {
         self.sign(msg).try_into()
     }
 }
@@ -283,14 +281,14 @@ impl PublicKey {
 
 }
 
-impl signature::Verifier<ed25519::Signature> for PublicKey {
+impl ed25519::signature::Verifier<ed25519::Signature> for PublicKey {
     fn verify(&self, msg: &[u8], signature: &ed25519::Signature)
-        -> core::result::Result<(), signature::Error> {
+        -> core::result::Result<(), ed25519::signature::Error> {
         let bytes = signature.to_bytes();
         if self.verify(msg, &(&bytes).into()).is_ok() {
             Ok(())
         } else {
-            Err(signature::Error::new())
+            Err(ed25519::signature::Error::new())
         }
     }
 }
@@ -396,7 +394,7 @@ impl From<ed25519::Signature> for Signature {
 }
 
 impl TryFrom<Signature> for ed25519::Signature {
-    type Error = signature::Error;
+    type Error = ed25519::signature::Error;
 
     fn try_from(sig: Signature) -> core::result::Result<ed25519::Signature, Self::Error> {
         (&sig.to_bytes()[..]).try_into()
