@@ -178,7 +178,6 @@ impl Keypair {
 
 impl signature::Signer<ed25519::Signature> for Keypair {
     fn try_sign(&self, msg: &[u8]) -> core::result::Result<ed25519::Signature, signature::Error> {
-        use core::convert::TryInto;
         self.sign(msg).try_into()
     }
 }
@@ -319,7 +318,6 @@ impl TryFrom<&CosePublicKey> for PublicKey {
     type Error = crate::Error;
 
     fn try_from(cose: &CosePublicKey) -> Result<PublicKey> {
-        use core::convert::TryInto;
         let okp: &[u8; 32] = cose.x.as_ref().try_into().unwrap();
         Self::try_from(okp)
     }
@@ -401,7 +399,6 @@ impl TryFrom<Signature> for ed25519::Signature {
     type Error = signature::Error;
 
     fn try_from(sig: Signature) -> core::result::Result<ed25519::Signature, Self::Error> {
-        use core::convert::TryInto;
         (&sig.to_bytes()[..]).try_into()
     }
 }

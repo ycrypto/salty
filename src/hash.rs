@@ -69,7 +69,6 @@ static K: [u64; 80] = [
 
 fn hash_blocks(digest: &mut [u8; 64], msg: &[u8]) -> usize {
     #![allow(non_snake_case)]
-    use core::convert::TryInto;
 
     // convert digest (u8-array) into hash parts (u64-words array)
     let mut H: [Wrapping<u64>; 8] = Default::default(); //[Wrapping(0); 8];
