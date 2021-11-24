@@ -1,6 +1,6 @@
 [package]
 name = "salty"
-version = "0.2.0-alpha.2"
+version = "0.2.0"
 authors = ["Nicolas Stalder <n@stalder.io>"]
 edition = "2021"
 description = "Small, sweet, swift Ed25519 signatures for microcontrollers"
