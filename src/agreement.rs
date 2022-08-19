@@ -221,4 +221,15 @@ mod tests {
         //     assert_eq!(hex::encode(k), "7c3911e0ab2586fd864497297e575e6f3bc601c0883c30df5f4dd2d24f665424");
         // }
     }
+
+    #[test]
+    fn zeroize_on_drop() {
+        let mut secret = SecretKey::from_seed(&[1u8; 32]);
+
+        unsafe {
+            core::ptr::drop_in_place(&mut secret);
+        }
+
+        assert_eq!(secret.0.as_bytes(), &[0u8; 32]);
+    }
 }
