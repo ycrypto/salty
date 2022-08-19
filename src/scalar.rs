@@ -1,6 +1,7 @@
 use core::ops::{Add, Mul};
 
 use crate::constants::SCALAR_LENGTH;
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 /// 32 octets, interpreted as little-endian 256 bit unsigned integer
 pub type U256le = [u8; 32];
@@ -11,8 +12,10 @@ pub type U512le = [u8; 64];
 /// structure, consisting of these scalars. They are the
 /// integers modulo "ell", where "ell" is 2**252 + something something.
 #[repr(C)]
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct Scalar(pub [u8; SCALAR_LENGTH]);
+#[derive(Clone, Debug,Default,PartialEq, Zeroize, ZeroizeOnDrop)]
+pub struct Scalar(
+    pub [u8; SCALAR_LENGTH]
+);
 
 type UnpackedScalar = crate::scalar29::Scalar29;
 
@@ -297,5 +300,18 @@ mod test {
         let five = &two + &three;
 
         assert_eq!(five, Scalar::from(5u64));
+    }
+
+    #[test]
+    fn zeroize_on_drop() {
+        let mut one = Scalar([1u8; SCALAR_LENGTH]);
+
+        assert_ne!(one.0, [0u8; SCALAR_LENGTH]);
+
+        unsafe {
+            core::ptr::drop_in_place(&mut one);
+        }
+
+        assert_eq!(one.0, [0u8; SCALAR_LENGTH]);
     }
 }
