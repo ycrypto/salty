@@ -311,10 +311,10 @@ impl PublicKey {
 }
 
 #[cfg(feature = "cose")]
-impl Into<CosePublicKey> for PublicKey {
-    fn into(self) -> CosePublicKey {
+impl From<PublicKey> for CosePublicKey {
+    fn from(key: PublicKey) -> CosePublicKey {
         CosePublicKey {
-            x: cosey::Bytes::from_slice(&self.as_bytes()[..]).unwrap(),
+            x: cosey::Bytes::from_slice(key.as_bytes().as_ref()).unwrap(),
         }
     }
 }
