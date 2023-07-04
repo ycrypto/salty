@@ -1,7 +1,4 @@
-use core::ops::{
-    Add,
-    Mul,
-};
+use core::ops::{Add, Mul};
 
 use crate::constants::SCALAR_LENGTH;
 
@@ -14,10 +11,8 @@ pub type U512le = [u8; 64];
 /// structure, consisting of these scalars. They are the
 /// integers modulo "ell", where "ell" is 2**252 + something something.
 #[repr(C)]
-#[derive(Clone, Debug,Default,PartialEq)]
-pub struct Scalar(
-    pub [u8; SCALAR_LENGTH]
-);
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Scalar(pub [u8; SCALAR_LENGTH]);
 
 type UnpackedScalar = crate::scalar29::Scalar29;
 
@@ -188,10 +183,8 @@ impl<'a, 'b> Mul<&'b Scalar> for &'a Scalar {
 impl Scalar {
     #[allow(non_snake_case)]
     const L: [u8; 32] = [
-        0xed, 0xd3, 0xf5, 0x5c, 0x1a, 0x63, 0x12, 0x58,
-        0xd6, 0x9c, 0xf7, 0xa2, 0xde, 0xf9, 0xde, 0x14,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0x10,
+        0xed, 0xd3, 0xf5, 0x5c, 0x1a, 0x63, 0x12, 0x58, 0xd6, 0x9c, 0xf7, 0xa2, 0xde, 0xf9, 0xde,
+        0x14, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x10,
     ];
 
     /// The order of the group, 2**252 + something something
@@ -217,7 +210,7 @@ impl Scalar {
         for i in 0..256 {
             // As i runs from 0..256, the bottom 3 bits index the bit,
             // while the upper bits index the byte.
-            bits[i] = ((self.0[i>>3] >> (i&7)) & 1u8) as i8;
+            bits[i] = ((self.0[i >> 3] >> (i & 7)) & 1u8) as i8;
         }
         bits
     }
@@ -257,7 +250,6 @@ impl Scalar {
     // pub fn from_bytes_mod_order_wide(input: &[u8; 64]) -> Scalar {
     //     UnpackedScalar::from_bytes_wide(input).pack()
     // }
-
 
     /// Unpack this `Scalar` to an `UnpackedScalar` for faster arithmetic.
     pub(crate) fn unpack(&self) -> UnpackedScalar {
@@ -305,6 +297,5 @@ mod test {
         let five = &two + &three;
 
         assert_eq!(five, Scalar::from(5u64));
-
     }
 }

@@ -1,9 +1,6 @@
 use core::num::Wrapping;
 
-use crate::constants::{
-    // SHA256_LENGTH,
-    SHA512_LENGTH,
-};
+use crate::constants::SHA512_LENGTH;
 
 pub type Digest = [u8; SHA512_LENGTH];
 
@@ -119,8 +116,7 @@ fn hash_blocks(digest: &mut [u8; 64], msg: &[u8]) -> usize {
                 //         + sigma1(Wprev[(j + 14) % 16]);
                 // }
                 for j in 0..16 {
-                    W[j] +=
-                        W[(j + 9) % 16] + sigma0(W[(j + 1) % 16]) + sigma1(W[(j + 14) % 16]);
+                    W[j] += W[(j + 9) % 16] + sigma0(W[(j + 1) % 16]) + sigma1(W[(j + 14) % 16]);
                 }
             }
         }
@@ -187,7 +183,8 @@ pub fn sha512(digest: &mut [u8; 64], msg: &[u8]) {
     // then: bit 1 followed by zero bits until...
     padding[unprocessed] = 128;
     // ...message length in bits (NB: l is in bytes)
-    #[cfg(target_pointer_width = "64")] {
+    #[cfg(target_pointer_width = "64")]
+    {
         padding[padding_length - 9] = (l >> 61) as u8;
     }
     // BigEndian::write_u64(&mut padding[padding_length - 8..], (l << 3) as u64);
@@ -198,7 +195,6 @@ pub fn sha512(digest: &mut [u8; 64], msg: &[u8]) {
 
     // digest.copy_from_slice(&h);
 }
-
 
 /// self-contained Sha512 hash, following TweetNaCl
 pub struct Sha512 {
@@ -225,19 +221,16 @@ impl Sha512 {
 
         // if self.unprocessed + data.len() < 128 {
         if (self.unprocessed + data.len()) & !(0x80 - 1) == 0 {
-            self.buffer[self.unprocessed..self.unprocessed + data.len()]
-                .copy_from_slice(data);
+            self.buffer[self.unprocessed..self.unprocessed + data.len()].copy_from_slice(data);
             self.unprocessed += data.len();
         } else {
             // fill up buffer
             let filler = 128 - self.unprocessed;
-            self.buffer[self.unprocessed..]
-                .copy_from_slice(&data[..filler]);
+            self.buffer[self.unprocessed..].copy_from_slice(&data[..filler]);
             hash_blocks(&mut self.digest, &self.buffer);
 
             self.unprocessed = hash_blocks(&mut self.digest, &data[filler..]);
-            self.buffer[..self.unprocessed]
-                .copy_from_slice(&data[data.len() - self.unprocessed..]);
+            self.buffer[..self.unprocessed].copy_from_slice(&data[data.len() - self.unprocessed..]);
         }
     }
 
@@ -282,13 +275,15 @@ impl Sha512 {
         padding[self.unprocessed] = 128;
         // ...message length in bits (NB: l is in bytes)
 
-        #[cfg(target_pointer_width = "64")] {
+        #[cfg(target_pointer_width = "64")]
+        {
             padding[padding_length - 9] = (self.data_length >> 61) as u8;
         }
 
         // BigEndian::write_u64(&mut padding[padding_length - 8..], (self.data_length << 3) as u64);
         // padding[padding_length - 8..].copy_from_slice(&((self.data_length << 3) as u64).to_be_bytes());
-        padding[padding_length - 8..padding_length].copy_from_slice(&((self.data_length << 3) as u64).to_be_bytes());
+        padding[padding_length - 8..padding_length]
+            .copy_from_slice(&((self.data_length << 3) as u64).to_be_bytes());
 
         let padding = &padding[..padding_length];
         hash_blocks(&mut self.digest, padding);

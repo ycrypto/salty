@@ -8,3 +8,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.1] - 2023-07-04
 - accept any 32 byte array as X25519 public key per RFC 7748
 - bump edition to 2021 throughout
+- cargo clippy + fmt

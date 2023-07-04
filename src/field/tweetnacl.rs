@@ -1,25 +1,13 @@
-use core::ops::{
-    Add,
-    AddAssign,
-    Neg,
-    Sub,
-    SubAssign,
-    Mul,
-    MulAssign,
-};
+use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
-use subtle::{
-    Choice,
-    ConditionallySelectable,
-    ConstantTimeEq,
-};
+use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
 use super::FieldImplementation;
 
 pub type Limbs = [i64; 16];
 
 /// Element of the base field of the elliptic curve
-#[derive(Clone,Copy,Debug,Default)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct FieldElement(pub Limbs);
 
 impl ConditionallySelectable for FieldElement {
@@ -50,68 +38,38 @@ impl ConditionallySelectable for FieldElement {
 impl FieldImplementation for FieldElement {
     type Limbs = Limbs;
 
-    const ZERO: Self = Self([
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-    ]);
+    const ZERO: Self = Self([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
 
-    const ONE: Self = Self([
-        1, 0, 0, 0,
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-    ]);
+    const ONE: Self = Self([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
 
     const D: Self = Self([
-        0x78a3, 0x1359, 0x4dca, 0x75eb,
-        0xd8ab, 0x4141, 0x0a4d, 0x0070,
-        0xe898, 0x7779, 0x4079, 0x8cc7,
-        0xfe73, 0x2b6f, 0x6cee, 0x5203,
+        0x78a3, 0x1359, 0x4dca, 0x75eb, 0xd8ab, 0x4141, 0x0a4d, 0x0070, 0xe898, 0x7779, 0x4079,
+        0x8cc7, 0xfe73, 0x2b6f, 0x6cee, 0x5203,
     ]);
 
     const D2: Self = Self([
-        0xf159, 0x26b2, 0x9b94, 0xebd6,
-        0xb156, 0x8283, 0x149a, 0x00e0,
-        0xd130, 0xeef3, 0x80f2, 0x198e,
-        0xfce7, 0x56df, 0xd9dc, 0x2406,
+        0xf159, 0x26b2, 0x9b94, 0xebd6, 0xb156, 0x8283, 0x149a, 0x00e0, 0xd130, 0xeef3, 0x80f2,
+        0x198e, 0xfce7, 0x56df, 0xd9dc, 0x2406,
     ]);
 
     const EDWARDS_BASEPOINT_X: Self = Self([
-        0xd51a, 0x8f25, 0x2d60, 0xc956,
-        0xa7b2, 0x9525, 0xc760, 0x692c,
-        0xdc5c, 0xfdd6, 0xe231, 0xc0a4,
-        0x53fe, 0xcd6e, 0x36d3, 0x2169,
+        0xd51a, 0x8f25, 0x2d60, 0xc956, 0xa7b2, 0x9525, 0xc760, 0x692c, 0xdc5c, 0xfdd6, 0xe231,
+        0xc0a4, 0x53fe, 0xcd6e, 0x36d3, 0x2169,
     ]);
 
     const EDWARDS_BASEPOINT_Y: Self = Self([
-        0x6658, 0x6666, 0x6666, 0x6666,
-        0x6666, 0x6666, 0x6666, 0x6666,
-        0x6666, 0x6666, 0x6666, 0x6666,
-        0x6666, 0x6666, 0x6666, 0x6666,
+        0x6658, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666, 0x6666,
+        0x6666, 0x6666, 0x6666, 0x6666, 0x6666,
     ]);
 
     const I: Self = Self([
-        0xa0b0, 0x4a0e, 0x1b27, 0xc4ee,
-        0xe478, 0xad2f, 0x1806, 0x2f43,
-        0xd7a7, 0x3dfb, 0x0099, 0x2b4d,
-        0xdf0b, 0x4fc1, 0x2480, 0x2b83,
+        0xa0b0, 0x4a0e, 0x1b27, 0xc4ee, 0xe478, 0xad2f, 0x1806, 0x2f43, 0xd7a7, 0x3dfb, 0x0099,
+        0x2b4d, 0xdf0b, 0x4fc1, 0x2480, 0x2b83,
     ]);
 
-    const APLUS2_OVER_FOUR: Self = Self([
-        121666, 0, 0, 0,
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-    ]);
+    const APLUS2_OVER_FOUR: Self = Self([121666, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
 
-    const MONTGOMERY_BASEPOINT_U: Self = Self([
-        9, 0, 0, 0,
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-    ]);
+    const MONTGOMERY_BASEPOINT_U: Self = Self([9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
 
     fn to_bytes(&self) -> [u8; 32] {
         // make our own private copy
@@ -210,7 +168,6 @@ impl FieldImplementation for FieldElement {
     // }
     /// TODO: figure out why this doesn't pass the test at the end
     fn pow2523(&self) -> FieldElement {
-
         let mut sqrt = *self;
 
         for i in (0..=250).rev() {
@@ -238,7 +195,6 @@ impl PartialEq for FieldElement {
         bool::from(self.ct_eq(other))
     }
 }
-
 
 impl<'a, 'b> Add<&'b FieldElement> for &'a FieldElement {
     type Output = FieldElement;
@@ -337,7 +293,6 @@ impl<'b> MulAssign<&'b FieldElement> for FieldElement {
     }
 }
 
-
 impl FieldElement {
     fn carry(&mut self) {
         // TODO: multiplication calls this twice!!
@@ -362,14 +317,13 @@ impl FieldElement {
             self.0[i] -= carry << 16;
         }
     }
-
 }
 
 #[cfg(test)]
 mod tests {
 
-    use crate::field::FieldImplementation;
     use super::FieldElement;
+    use crate::field::FieldImplementation;
     use subtle::ConstantTimeEq;
 
     #[test]
@@ -377,17 +331,11 @@ mod tests {
         let one = FieldElement::ONE;
         let two = &one + &one;
 
-        let expected = FieldElement([
-            2, 0, 0, 0,
-            0, 0, 0, 0,
-            0, 0, 0, 0,
-            0, 0, 0, 0,
-        ]);
+        let expected = FieldElement([2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
 
         // TODO: Implement PartialEq (hopefully in constant time!)
         assert_eq!(two.0, expected.0);
         assert!(bool::from(two.ct_eq(&expected)))
-
     }
 
     #[test]
@@ -400,7 +348,6 @@ mod tests {
         // TODO: Implement PartialEq (hopefully in constant time!)
         assert_eq!(result.0, zero.0);
         assert!(bool::from(result.ct_eq(&zero)))
-
     }
 
     #[test]
@@ -411,11 +358,12 @@ mod tests {
 
         let two_times_three = &two * &three;
         // no multiplications, just sum up ONEs
-        let six = (1..=6).fold(FieldElement::ZERO, |partial_sum, _| &partial_sum + &FieldElement::ONE);
+        let six = (1..=6).fold(FieldElement::ZERO, |partial_sum, _| {
+            &partial_sum + &FieldElement::ONE
+        });
 
         assert_eq!(two_times_three.to_bytes(), six.to_bytes());
         assert!(bool::from(two_times_three.ct_eq(&six)));
-
     }
 
     #[test]
@@ -462,5 +410,4 @@ mod tests {
         let sqrt_nine = &nine.pow2523() * &nine;
         assert_eq!(&sqrt_nine * &sqrt_nine, nine);
     }
-
 }

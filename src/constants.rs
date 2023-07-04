@@ -26,4 +26,3 @@ pub const SECRETKEY_SERIALIZED_LENGTH: usize = 32;
 
 /// the length of a signature when serialized
 pub const SIGNATURE_SERIALIZED_LENGTH: usize = 64;
-

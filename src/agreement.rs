@@ -1,10 +1,7 @@
 //! 99.9% cribbed from x25519-dalek
 use crate::{
     constants::SECRETKEY_SEED_LENGTH,
-    field::{
-        FieldImplementation as _,
-        FieldElement,
-    },
+    field::{FieldElement, FieldImplementation as _},
     montgomery::MontgomeryPoint,
     scalar::Scalar,
 };
@@ -18,7 +15,7 @@ pub struct PublicKey(pub(crate) MontgomeryPoint);
 /// use `PublicKey::from(&secret_key)`.
 // #[derive(Zeroize)]
 // #[zeroize(drop)]
-#[derive(Clone/*, Zeroize*/)]
+#[derive(Clone /*, Zeroize*/)]
 pub struct SecretKey(pub(crate) Scalar);
 
 /// The result of a Diffie-Hellman key exchange.
@@ -130,29 +127,27 @@ pub fn x25519(scalar: [u8; 32], input_u: [u8; 32]) -> [u8; 32] {
     let public_key = PublicKey(input_point);
 
     let agreed_secret = secret_key.agree(&public_key);
-    
+
     agreed_secret.0.to_bytes()
 }
 
 #[cfg(test)]
 mod tests {
-    use core::convert::TryInto;
     use super::*;
+    use core::convert::TryInto;
 
     #[test]
     fn direct_agreement() {
         let seed1: [u8; 32] = [
-            0x98, 0xa7, 0x02, 0x22, 0xf0, 0xb8, 0x12, 0x1a,
-            0xa9, 0xd3, 0x0f, 0x81, 0x3d, 0x68, 0x3f, 0x80,
-            0x9e, 0x46, 0x2b, 0x46, 0x9c, 0x7f, 0xf8, 0x76,
-            0x39, 0x49, 0x9b, 0xb9, 0x4e, 0x6d, 0xae, 0x41,
+            0x98, 0xa7, 0x02, 0x22, 0xf0, 0xb8, 0x12, 0x1a, 0xa9, 0xd3, 0x0f, 0x81, 0x3d, 0x68,
+            0x3f, 0x80, 0x9e, 0x46, 0x2b, 0x46, 0x9c, 0x7f, 0xf8, 0x76, 0x39, 0x49, 0x9b, 0xb9,
+            0x4e, 0x6d, 0xae, 0x41,
         ];
 
         let seed2: [u8; 32] = [
-            0x31, 0xf8, 0x50, 0x42, 0x46, 0x3c, 0x2a, 0x35,
-            0x5a, 0x20, 0x03, 0xd0, 0x62, 0xad, 0xf5, 0xaa,
-            0xa1, 0x0b, 0x8c, 0x61, 0xe6, 0x36, 0x06, 0x2a,
-            0xaa, 0xd1, 0x1c, 0x2a, 0x26, 0x08, 0x34, 0x06,
+            0x31, 0xf8, 0x50, 0x42, 0x46, 0x3c, 0x2a, 0x35, 0x5a, 0x20, 0x03, 0xd0, 0x62, 0xad,
+            0xf5, 0xaa, 0xa1, 0x0b, 0x8c, 0x61, 0xe6, 0x36, 0x06, 0x2a, 0xaa, 0xd1, 0x1c, 0x2a,
+            0x26, 0x08, 0x34, 0x06,
         ];
 
         let sk1 = SecretKey::from_seed(&seed1);
@@ -165,18 +160,16 @@ mod tests {
         let shared2 = sk2.agree(&pk1);
 
         assert_eq!(shared1.0, shared2.0);
-
     }
 
     fn load_bytes(little_endian_hex_digits: &str) -> [u8; 32] {
-        hex::decode(little_endian_hex_digits).unwrap().try_into().unwrap()
+        hex::decode(little_endian_hex_digits)
+            .unwrap()
+            .try_into()
+            .unwrap()
     }
 
-    fn rfc_7748_x25519_expected_outputs(
-        input_scalar: &str,
-        input_u: &str,
-        output_u: &str,
-    ) {
+    fn rfc_7748_x25519_expected_outputs(input_scalar: &str, input_u: &str, output_u: &str) {
         let scalar = clamp_scalar(load_bytes(input_scalar));
         let secret_key = SecretKey(scalar);
 
@@ -220,7 +213,10 @@ mod tests {
 
         // once
         let mut k = x25519(k, u);
-        assert_eq!(hex::encode(k), "422c8e7a6227d7bca1350b3e2bb7279f7897b87bb6854b783c60e80311ae3079");
+        assert_eq!(
+            hex::encode(k),
+            "422c8e7a6227d7bca1350b3e2bb7279f7897b87bb6854b783c60e80311ae3079"
+        );
 
         // 1_000 times
         let mut result = [0u8; 32];
@@ -229,7 +225,10 @@ mod tests {
             u = k;
             k = result;
         });
-        assert_eq!(hex::encode(k), "684cf59ba83309552800ef566f2f4d3c1c3887c49360e3875f2eb94d99532c51");
+        assert_eq!(
+            hex::encode(k),
+            "684cf59ba83309552800ef566f2f4d3c1c3887c49360e3875f2eb94d99532c51"
+        );
 
         // #[cfg(feature = "very-long-x25519-test")] {
         //     // 1_000_000 times
@@ -241,5 +240,4 @@ mod tests {
         //     assert_eq!(hex::encode(k), "7c3911e0ab2586fd864497297e575e6f3bc601c0883c30df5f4dd2d24f665424");
         // }
     }
-
 }

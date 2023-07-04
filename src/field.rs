@@ -1,26 +1,12 @@
 use core::{
     // cmp::PartialEq,
     fmt::Debug,
-    ops::{
-        Add,
-        AddAssign,
-        Neg,
-        Sub,
-        SubAssign,
-        Mul,
-        MulAssign,
-    },
+    ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
-use subtle::{
-    ConstantTimeEq,
-    ConditionallySelectable,
-};
+use subtle::{ConditionallySelectable, ConstantTimeEq};
 
-use crate::{
-    Error,
-    Result,
-};
+use crate::{Error, Result};
 
 /// Requirements on an implementation of the base field.
 ///
@@ -46,7 +32,6 @@ where
     // Self: Clone,
     Self: Copy,
     // Self: !Copy,  // not sure - curve25519-dalek uses implicit copies, do we want this?
-
     Self: Debug,
     // Self: Default,  // would want this to return zero I think
 
@@ -66,7 +51,6 @@ where
 
     for<'a, 'b> &'a Self: Mul<&'b Self, Output = Self>,
     for<'b> Self: MulAssign<&'b Self>,
-    // for<'a> &'a Self: Neg<Output = Self>,
 {
     /// Internal representation as limbs
     type Limbs;
@@ -133,15 +117,14 @@ where
 
     fn inverse(&self) -> Self;
     fn pow2523(&self) -> Self;
-
 }
 
 #[cfg(tweetnacl)]
 pub mod tweetnacl;
 #[cfg(tweetnacl)]
-pub use tweetnacl::{Limbs, FieldElement};
+pub use tweetnacl::{FieldElement, Limbs};
 
 #[cfg(haase)]
 pub mod haase;
 #[cfg(haase)]
-pub use haase::{Limbs, FieldElement};
+pub use haase::{FieldElement, Limbs};
