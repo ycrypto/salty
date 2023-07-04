@@ -11,3 +11,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - cargo clippy + fmt
 - bump dependency versions
 - make dependency on RustCrypto/ed25519 a feature
+- run wycheproof on signing, not just verification (#28)
+- check more in ci.yml
