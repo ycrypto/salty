@@ -38,6 +38,9 @@ jobs:
       #   # run: RUSTFLAGS='--deny warnings' cargo clippy --all
       #   run: cargo clippy --all
       #   shell: bash
+      - name: Check formatting
+        run: cargo fmt -- --check
+
       - name: Build PC
         run: cargo build --release
         shell: bash
