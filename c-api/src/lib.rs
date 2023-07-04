@@ -2,26 +2,21 @@
 
 extern crate panic_halt;
 
-use core::convert::TryFrom;
-
-pub use salty::{
-    Error,
-    Result,
-    constants::{
-        FIELD_ELEMENT_LENGTH,
-        SECRETKEY_SEED_LENGTH,
-        PUBLICKEY_SERIALIZED_LENGTH,
-        SIGNATURE_SERIALIZED_LENGTH,
-        SHA512_LENGTH,
-    },
-};
+pub use salty::Error;
 
 use salty::{
     Keypair,
-    // SecretKey,
     PublicKey,
     Signature,
 };
+
+// these are skipped instead of converted to defines
+// if we `pub use salty::constants::{...}`.
+pub const FIELD_ELEMENT_LENGTH: usize = 32;
+pub const PUBLICKEY_SERIALIZED_LENGTH: usize = 32;
+pub const SECRETKEY_SEED_LENGTH: usize = 32;
+pub const SIGNATURE_SERIALIZED_LENGTH: usize = 64;
+pub const SHA512_LENGTH: usize = 64;
 
 #[no_mangle]
 /// Generates a public key from a secret seed. Use to verify signatures.

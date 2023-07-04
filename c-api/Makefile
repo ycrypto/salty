@@ -12,6 +12,9 @@ clean:
 	cargo clean
 	make -C example clean
 
+c-bindings:
+	cbindgen --config cbindgen.toml --lang c --output salty.h
+
 libopencm3/lib/libopencm3_stm32f4.a:
 	$(MAKE) -C libopencm3
 
