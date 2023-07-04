@@ -37,7 +37,7 @@ type UnpackedScalar = crate::scalar29::Scalar29;
 
 impl From<&[u8; SCALAR_LENGTH]> for Scalar {
     fn from(bytes: &[u8; SCALAR_LENGTH]) -> Scalar {
-        Scalar(bytes.clone())
+        Scalar(*bytes)
     }
 }
 
@@ -200,7 +200,7 @@ impl Scalar {
     }
 
     pub fn from_bytes(bytes: &[u8; SCALAR_LENGTH]) -> Self {
-        Scalar(bytes.clone())
+        Scalar(*bytes)
     }
 
     pub fn as_bytes(&self) -> &[u8; SCALAR_LENGTH] {
@@ -225,7 +225,7 @@ impl Scalar {
     pub fn from_u256_le(x: &U256le) -> Scalar {
         // TweetNaclScalar::from(&Scalar(*x)).reduce_modulo_ell()
         // Temporarily allow s_unreduced.bytes > 2^255 ...
-        let s_unreduced = Scalar(x.clone());
+        let s_unreduced = Scalar(*x);
 
         // Then reduce mod the group order and return the reduced representative.
         let s = s_unreduced.reduce();

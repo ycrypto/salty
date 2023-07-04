@@ -5,7 +5,6 @@ mod wycheproof {
 
     use wycheproof::wycheproof::*;
 
-    use core::convert::TryFrom;
     use salty::constants::{PUBLICKEY_SERIALIZED_LENGTH, SECRETKEY_SEED_LENGTH};
     use salty::agreement;
 

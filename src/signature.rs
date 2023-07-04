@@ -295,7 +295,7 @@ impl ed25519::signature::Verifier<ed25519::Signature> for PublicKey {
 
 impl PublicKey {
     pub fn as_bytes(&self) -> &[u8; 32] {
-        &self.compressed.as_bytes()
+        self.compressed.as_bytes()
     }
     pub fn to_bytes(&self) -> [u8; 32] {
         self.compressed.to_bytes()
@@ -338,7 +338,7 @@ impl From<&[u8; SECRETKEY_SEED_LENGTH]> for SecretKey {
         let mut nonce = [0u8; SECRETKEY_NONCE_LENGTH];
         nonce.copy_from_slice(&hash[SECRETKEY_SCALAR_LENGTH..]);
 
-        SecretKey { seed: seed.clone(), scalar, nonce }
+        SecretKey { seed: *seed, scalar, nonce }
     }
 }
 
@@ -356,7 +356,7 @@ impl TryFrom<&[u8; PUBLICKEY_SERIALIZED_LENGTH]> for PublicKey {
     type Error = crate::Error;
 
     fn try_from(bytes: &[u8; PUBLICKEY_SERIALIZED_LENGTH]) -> Result<PublicKey> {
-        let compressed = CompressedY(bytes.clone());
+        let compressed = CompressedY(*bytes);
         let point = compressed.decompressed()?;
         Ok(PublicKey { compressed, point } )
     }
@@ -484,13 +484,13 @@ mod tests {
             0x32, 0xf9, 0xa6, 0x44, 0x2a, 0x17, 0xbc, 0x09,
         ];
 
-        let signature = keypair.sign(&data);
+        let signature = keypair.sign(data);
 
         assert_eq!(signature.r.0, R_expected);
         assert_eq!(signature.s.0, S_expected);
 
         let public_key = keypair.public;
-        let verification = public_key.verify(&data, &signature);
+        let verification = public_key.verify(data, &signature);
         assert!(verification.is_ok());
     }
 

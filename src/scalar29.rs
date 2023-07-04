@@ -144,7 +144,7 @@ impl Scalar29 {
     pub fn to_bytes(&self) -> [u8; 32] {
         let mut s = [0u8; 32];
 
-        s[0]  =  (self.0[ 0] >>  0)                      as u8;
+        s[0]  =  self.0[ 0]                              as u8;
         s[1]  =  (self.0[ 0] >>  8)                      as u8;
         s[2]  =  (self.0[ 0] >> 16)                      as u8;
         s[3]  = ((self.0[ 0] >> 24) | (self.0[ 1] << 5)) as u8;
@@ -173,7 +173,7 @@ impl Scalar29 {
         s[26] =  (self.0[ 7] >>  5)                      as u8;
         s[27] =  (self.0[ 7] >> 13)                      as u8;
         s[28] =  (self.0[ 7] >> 21)                      as u8;
-        s[29] =  (self.0[ 8] >>  0)                      as u8;
+        s[29] =  self.0[ 8]                              as u8;
         s[30] =  (self.0[ 8] >>  8)                      as u8;
         s[31] =  (self.0[ 8] >> 16)                      as u8;
 

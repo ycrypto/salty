@@ -2,7 +2,7 @@
 name = "qemu-tests"
 version = "0.0.0"
 authors = ["Nicolas Stalder <n@stalder.io>"]
-edition = "2018"
+edition = "2021"
 description = "Test salty using QEMU musca-b1"
 license = "Apache-2.0 OR MIT"
 
