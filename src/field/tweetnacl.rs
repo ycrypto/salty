@@ -274,7 +274,7 @@ impl<'a, 'b> Mul<&'b FieldElement> for &'a FieldElement {
         // also: really hope the initialization of `product`
         // is optimized away...
         let mut product: Limbs = Default::default();
-        product.copy_from_slice(&mut pre_product[..16]);
+        product.copy_from_slice(&pre_product[..16]);
 
         let mut fe = FieldElement(product);
         // normalize such that all limbs lie in [0, 2^16)

@@ -140,10 +140,10 @@ Future plans include:
 
 /// Extensible error type for all `salty` operations.
 ///
-/// This enum has a hidden member, to prevent exhaustively checking for errors.
-/// It also has a member `NoError` with value zero, for use in the C API.
+/// This enum has a member `NoError` with value zero, for use in the C API.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 #[repr(C)]
+#[non_exhaustive]
 pub enum Error {
     /// Never occurs, simplifies C bindings
     NoError = 0,
@@ -162,9 +162,6 @@ pub enum Error {
 
     /// Point is on other twist of curve
     WrongTwist,
-
-    #[doc(hidden)]
-    _Extensible,
 }
 
 /// Result type for all `salty` operations.
