@@ -65,12 +65,21 @@ pub struct Signature {
 
 impl Keypair {
     pub fn sign(&self, message: &[u8]) -> Signature {
+        self.sign_parts(|ctx| Ok(ctx.update(message))).unwrap()
+    }
+
+    /// Sign a message defined by its hash.
+    ///
+    /// Instead of passing the message directly (`sign()`), the caller
+    /// provides a `msg_update` closure that will be called to feed the
+    /// hash of the message being signed. This closure will be called twice.
+    pub fn sign_parts<F>(&self, msg_update: F) -> Result<Signature>
+            where F: Fn(&mut Sha512) -> Result<()> {
 
         // R = rB, with r = H(nonce, M)
-        let first_hash = Sha512::new()
-            .updated(&self.secret.nonce)
-            .updated(message)
-            .finalize();
+        let mut first_hash = Sha512::new().updated(&self.secret.nonce);
+        msg_update(&mut first_hash)?;
+        let first_hash = first_hash.finalize();
 
         let r: Scalar = Scalar::from_u512_le(&first_hash);
         #[allow(non_snake_case)]
@@ -78,16 +87,16 @@ impl Keypair {
 
 
         // S = r + H(R, A, M)s (mod l), with A = sB the public key
-        let second_hash = Sha512::new()
+        let mut second_hash = Sha512::new()
             .updated(&R.0)
-            .updated(&self.public.compressed.0)
-            .updated(message)
-            .finalize();
+            .updated(&self.public.compressed.0);
+        msg_update(&mut second_hash)?;
+        let second_hash = second_hash.finalize();
 
         let h: Scalar = Scalar::from_u512_le(&second_hash);
         let s = &r + &(&h * &self.secret.scalar);
 
-        Signature { r: R, s }
+        Ok(Signature { r: R, s })
     }
 
     pub fn sign_with_context(&self, message: &[u8], context: &[u8])
@@ -182,11 +191,22 @@ impl ed25519::signature::Signer<ed25519::Signature> for Keypair {
 
 impl PublicKey {
     pub fn verify(&self, message: &[u8], signature: &Signature) -> Result {
-        let hash = Sha512::new()
+        self.verify_parts(signature, |ctx| Ok(ctx.update(message)))
+    }
+
+    /// Verify a message defined by its hash.
+    ///
+    /// Instead of passing the message directly (`verify()`), the caller
+    /// provides a `msg_update` closure that will be called to feed the
+    /// hash of the message being verified.
+    pub fn verify_parts<F>(&self, signature: &Signature, msg_update: F) -> Result
+            where F: Fn(&mut Sha512) -> Result<()> {
+
+        let mut hash = Sha512::new()
             .updated(&signature.r.0)
-            .updated(&self.compressed.0)
-            .updated(message)
-            .finalize();
+            .updated(&self.compressed.0);
+        msg_update(&mut hash)?;
+        let hash = hash.finalize();
 
         let k: Scalar = Scalar::from_u512_le(&hash);
 
@@ -493,6 +513,66 @@ mod tests {
         let verification = public_key.verify(&data, &signature);
         assert!(verification.is_ok());
     }
+
+    #[test]
+    fn test_signature_parts() {
+
+        // RFC8032 7.1 Test 3
+        let seed: [u8; 32] = [
+            0xc5, 0xaa, 0x8d, 0xf4, 0x3f, 0x9f, 0x83, 0x7b,
+            0xed, 0xb7, 0x44, 0x2f, 0x31, 0xdc, 0xb7, 0xb1,
+            0x66, 0xd3, 0x85, 0x35, 0x07, 0x6f, 0x09, 0x4b,
+            0x85, 0xce, 0x3a, 0x2e, 0x0b, 0x44, 0x58, 0xf7,
+        ];
+
+        let keypair = Keypair::from(&seed);
+
+        let msg = [0xaf, 0x82];
+        let part_update = |hash: &mut Sha512| {
+            hash.update(&[0xaf]);
+            hash.update(&[0x82]);
+            Ok(())
+        };
+
+        let r_expected = [
+            0x62, 0x91, 0xd6, 0x57, 0xde, 0xec, 0x24, 0x02,
+            0x48, 0x27, 0xe6, 0x9c, 0x3a, 0xbe, 0x01, 0xa3,
+            0x0c, 0xe5, 0x48, 0xa2, 0x84, 0x74, 0x3a, 0x44,
+            0x5e, 0x36, 0x80, 0xd7, 0xdb, 0x5a, 0xc3, 0xac,
+        ];
+
+        let s_expected = [
+            0x18, 0xff, 0x9b, 0x53, 0x8d, 0x16, 0xf2, 0x90,
+            0xae, 0x67, 0xf7, 0x60, 0x98, 0x4d, 0xc6, 0x59,
+            0x4a, 0x7c, 0x15, 0xe9, 0x71, 0x6e, 0xd2, 0x8d,
+            0xc0, 0x27, 0xbe, 0xce, 0xea, 0x1e, 0xc4, 0x0a,
+        ];
+
+        let signature = keypair.sign_parts(part_update).unwrap();
+        assert_eq!(signature.r.0, r_expected);
+        assert_eq!(signature.s.0, s_expected);
+
+        let public_key = keypair.public;
+        public_key.verify_parts(&signature, part_update).unwrap();
+        public_key.verify(&msg, &signature).unwrap();
+
+        // check wrong hash fails
+        let bad_part_update = |hash: &mut Sha512| {
+            hash.update(&[0x99]);
+            Ok(())
+        };
+        public_key.verify_parts(&signature, bad_part_update).unwrap_err();
+
+        // check error result fails
+        let err_part_update = |hash: &mut Sha512| {
+            part_update(hash).unwrap();
+            Err(crate::Error::SignatureInvalid)
+        };
+        let keypair = Keypair::from(&seed);
+        keypair.sign_parts(err_part_update).unwrap_err();
+        public_key.verify_parts(&signature, err_part_update).unwrap_err();
+    }
+
 
     #[test]
     fn test_ed25519ph_with_rfc_8032_test_vector() {
