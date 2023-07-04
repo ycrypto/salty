@@ -175,7 +175,7 @@ pub mod agreement;
 pub mod constants;
 
 mod edwards;
-pub use edwards::{EdwardsPoint, CompressedY};
+pub use edwards::{CompressedY, EdwardsPoint};
 
 /// Self-contained implementation of SHA512
 mod hash;
@@ -196,6 +196,6 @@ pub use scalar::Scalar;
 pub mod signature;
 // TODO: rename these (and handle the API-breaking consequences)
 // It's confusing now that we have both Edwards and Montgomery points.
-pub use crate::signature::{SecretKey, PublicKey, Keypair, Signature};
+pub use crate::signature::{Keypair, PublicKey, SecretKey, Signature};
 #[cfg(feature = "cose")]
 pub use signature::CosePublicKey;

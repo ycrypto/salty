@@ -1,7 +1,6 @@
 use std::env;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-
     println!("cargo:rerun-if-changed=build.rs");
 
     // Cortex-M33 is compatible with Cortex-M4 and its DSP extension instruction UMAAL.
@@ -33,10 +32,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let target = std::env::var("TARGET")?;
 
         if !(target.starts_with("thumbv7em") || target.starts_with("thumbv8m.main")) {
-            panic!(concat!(
-                "Target `{}` is not a Cortex-M processor with the DSP extension.\n",
-                "Try `--target thumbv7em-none-eabi` or `--target thumbv8m.main-none-eabi`\n",
-            ), target);
+            panic!(
+                concat!(
+                    "Target `{}` is not a Cortex-M processor with the DSP extension.\n",
+                    "Try `--target thumbv7em-none-eabi` or `--target thumbv8m.main-none-eabi`\n",
+                ),
+                target
+            );
         }
 
         let out_dir = std::path::PathBuf::from(std::env::var("OUT_DIR").unwrap());

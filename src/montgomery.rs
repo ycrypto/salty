@@ -1,13 +1,10 @@
 //! 99.9% cribbed from curve25519-dalek
 
-use core::{
-    // cmp::PartialEq,
-    ops::{
-        // Add,
-        // Neg,
-        Mul,
-        MulAssign,
-    }
+use core::ops::{
+    // Add,
+    // Neg,
+    Mul,
+    MulAssign,
 };
 
 use subtle::Choice;
@@ -16,21 +13,18 @@ use subtle::ConstantTimeEq;
 // use zeroize::Zeroize;
 
 use crate::{
+    // constants::COMPRESSED_Y_LENGTH,
+    edwards::{CompressedY as CompressedEdwardsY, EdwardsPoint},
+    field::{FieldElement, FieldImplementation as _},
+    scalar::Scalar,
     Error,
     Result,
-    // constants::COMPRESSED_Y_LENGTH,
-    edwards::{CompressedY as CompressedEdwardsY, EdwardsPoint as EdwardsPoint},
-    field::{
-        FieldImplementation as _,
-        FieldElement,
-    },
-    scalar::Scalar,
 };
 
 // #[derive(Clone,Copy,Debug,Default)]
 /// Holds the \\(u\\)-coordinate of a point on the Montgomery form of
 /// Curve25519 or its twist.
-#[derive(Clone,Copy,Debug,Default/*,Hash*/)]
+#[derive(Clone, Copy, Debug, Default /*,Hash*/)]
 pub struct MontgomeryPoint(pub FieldElement);
 
 impl ConstantTimeEq for MontgomeryPoint {
@@ -124,7 +118,6 @@ impl MontgomeryPoint {
     pub fn basepoint() -> Self {
         Self(FieldElement::MONTGOMERY_BASEPOINT_U)
     }
-
 }
 
 /// A `ProjectivePoint` holds a point on the projective line
@@ -139,7 +132,6 @@ struct ProjectivePoint {
 
 // impl Identity for ProjectivePoint {
 impl ProjectivePoint {
-
     fn neutral_element() -> ProjectivePoint {
         ProjectivePoint {
             U: FieldElement::ONE,
@@ -205,34 +197,34 @@ fn differential_add_and_double(
     let t2 = &Q.U + &Q.W;
     let t3 = &Q.U - &Q.W;
 
-    let t4 = t0.squared();   // (U_P + W_P)^2 = U_P^2 + 2 U_P W_P + W_P^2
-    let t5 = t1.squared();   // (U_P - W_P)^2 = U_P^2 - 2 U_P W_P + W_P^2
+    let t4 = t0.squared(); // (U_P + W_P)^2 = U_P^2 + 2 U_P W_P + W_P^2
+    let t5 = t1.squared(); // (U_P - W_P)^2 = U_P^2 - 2 U_P W_P + W_P^2
 
-    let t6 = &t4 - &t5;     // 4 U_P W_P
+    let t6 = &t4 - &t5; // 4 U_P W_P
 
-    let t7 = &t0 * &t3;     // (U_P + W_P) (U_Q - W_Q) = U_P U_Q + W_P U_Q - U_P W_Q - W_P W_Q
-    let t8 = &t1 * &t2;     // (U_P - W_P) (U_Q + W_Q) = U_P U_Q - W_P U_Q + U_P W_Q - W_P W_Q
+    let t7 = &t0 * &t3; // (U_P + W_P) (U_Q - W_Q) = U_P U_Q + W_P U_Q - U_P W_Q - W_P W_Q
+    let t8 = &t1 * &t2; // (U_P - W_P) (U_Q + W_Q) = U_P U_Q - W_P U_Q + U_P W_Q - W_P W_Q
 
-    let t9  = &t7 + &t8;    // 2 (U_P U_Q - W_P W_Q)
-    let t10 = &t7 - &t8;    // 2 (W_P U_Q - U_P W_Q)
+    let t9 = &t7 + &t8; // 2 (U_P U_Q - W_P W_Q)
+    let t10 = &t7 - &t8; // 2 (W_P U_Q - U_P W_Q)
 
-    let t11 =  t9.squared(); // 4 (U_P U_Q - W_P W_Q)^2
+    let t11 = t9.squared(); // 4 (U_P U_Q - W_P W_Q)^2
     let t12 = t10.squared(); // 4 (W_P U_Q - U_P W_Q)^2
 
     let t13 = &FieldElement::APLUS2_OVER_FOUR * &t6; // (A + 2) U_P U_Q
 
-    let t14 = &t4 * &t5;    // ((U_P + W_P)(U_P - W_P))^2 = (U_P^2 - W_P^2)^2
-    let t15 = &t13 + &t5;   // (U_P - W_P)^2 + (A + 2) U_P W_P
+    let t14 = &t4 * &t5; // ((U_P + W_P)(U_P - W_P))^2 = (U_P^2 - W_P^2)^2
+    let t15 = &t13 + &t5; // (U_P - W_P)^2 + (A + 2) U_P W_P
 
-    let t16 = &t6 * &t15;   // 4 (U_P W_P) ((U_P - W_P)^2 + (A + 2) U_P W_P)
+    let t16 = &t6 * &t15; // 4 (U_P W_P) ((U_P - W_P)^2 + (A + 2) U_P W_P)
 
     let t17 = affine_PmQ * &t12; // U_D * 4 (W_P U_Q - U_P W_Q)^2
-    let t18 = t11;               // W_D * 4 (U_P U_Q - W_P W_Q)^2
+    let t18 = t11; // W_D * 4 (U_P U_Q - W_P W_Q)^2
 
-    P.U = t14;  // U_{P'} = (U_P + W_P)^2 (U_P - W_P)^2
-    P.W = t16;  // W_{P'} = (4 U_P W_P) ((U_P - W_P)^2 + ((A + 2)/4) 4 U_P W_P)
-    Q.U = t18;  // U_{Q'} = W_D * 4 (U_P U_Q - W_P W_Q)^2
-    Q.W = t17;  // W_{Q'} = U_D * 4 (W_P U_Q - U_P W_Q)^2
+    P.U = t14; // U_{P'} = (U_P + W_P)^2 (U_P - W_P)^2
+    P.W = t16; // W_{P'} = (4 U_P W_P) ((U_P - W_P)^2 + ((A + 2)/4) 4 U_P W_P)
+    Q.U = t18; // U_{Q'} = W_D * 4 (U_P U_Q - W_P W_Q)^2
+    Q.W = t17; // W_{Q'} = U_D * 4 (W_P U_Q - U_P W_Q)^2
 }
 
 /// Multiply this `MontgomeryPoint` by a `Scalar`.
@@ -312,9 +304,15 @@ mod test {
         let edwards_basepoint = crate::edwards::EdwardsPoint::basepoint();
         let montgomery_basepoint = MontgomeryPoint::basepoint();
 
-        assert_eq!(edwards_basepoint, montgomery_basepoint.to_edwards(0).unwrap());
+        assert_eq!(
+            edwards_basepoint,
+            montgomery_basepoint.to_edwards(0).unwrap()
+        );
 
         let scalar = Scalar::from(123456);
-        assert_eq!(&scalar * &edwards_basepoint, (&scalar * &montgomery_basepoint).to_edwards(1).unwrap());
+        assert_eq!(
+            &scalar * &edwards_basepoint,
+            (&scalar * &montgomery_basepoint).to_edwards(1).unwrap()
+        );
     }
 }
