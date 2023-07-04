@@ -5,7 +5,6 @@ mod wycheproof {
 
     use wycheproof::wycheproof::*;
 
-    use core::convert::TryFrom;
     use salty::constants::{
         PUBLICKEY_SERIALIZED_LENGTH, SECRETKEY_SERIALIZED_LENGTH, SIGNATURE_SERIALIZED_LENGTH,
     };

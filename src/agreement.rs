@@ -74,7 +74,7 @@ impl SecretKey {
     }
 
     pub fn from_seed(seed: &[u8; SECRETKEY_SEED_LENGTH]) -> Self {
-        Self(clamp_scalar(seed.clone()))
+        Self(clamp_scalar(*seed))
     }
 
     /// Extract this key's bytes for serialization.
@@ -130,8 +130,8 @@ pub fn x25519(scalar: [u8; 32], input_u: [u8; 32]) -> [u8; 32] {
     let public_key = PublicKey(input_point);
 
     let agreed_secret = secret_key.agree(&public_key);
-    let raw_agreed_secret = agreed_secret.0.to_bytes();
-    raw_agreed_secret
+    
+    agreed_secret.0.to_bytes()
 }
 
 #[cfg(test)]

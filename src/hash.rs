@@ -213,7 +213,7 @@ impl Sha512 {
         let mut digest: Digest = [0; SHA512_LENGTH];
         digest.copy_from_slice(&IV);
         Sha512 {
-            digest: digest,
+            digest,
             buffer: [0; 128],
             unprocessed: 0,
             data_length: 0,
@@ -224,9 +224,9 @@ impl Sha512 {
         self.data_length += data.len();
 
         // if self.unprocessed + data.len() < 128 {
-        if self.unprocessed + data.len() & !(0x80 - 1) == 0 {
+        if (self.unprocessed + data.len()) & !(0x80 - 1) == 0 {
             self.buffer[self.unprocessed..self.unprocessed + data.len()]
-                .copy_from_slice(&data);
+                .copy_from_slice(data);
             self.unprocessed += data.len();
         } else {
             // fill up buffer

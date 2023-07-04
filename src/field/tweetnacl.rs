@@ -115,7 +115,7 @@ impl FieldImplementation for FieldElement {
 
     fn to_bytes(&self) -> [u8; 32] {
         // make our own private copy
-        let mut fe = self.clone();
+        let mut fe = *self;
 
         // three times' the charm??
         // TODO: figure out why :)
@@ -179,14 +179,14 @@ impl FieldImplementation for FieldElement {
         // TODO: possibly assert! that fe != 0?
 
         // make our own private copy
-        let mut inverse = self.clone();
+        let mut inverse = *self;
 
         // exponentiate with 2**255 - 21,
         // which by Fermat's little theorem is the same as inversion
         for i in (0..=253).rev() {
             inverse = inverse.squared();
             if i != 2 && i != 4 {
-                inverse = &inverse * &self;
+                inverse = &inverse * self;
             }
         }
 
@@ -211,12 +211,12 @@ impl FieldImplementation for FieldElement {
     /// TODO: figure out why this doesn't pass the test at the end
     fn pow2523(&self) -> FieldElement {
 
-        let mut sqrt = self.clone();
+        let mut sqrt = *self;
 
         for i in (0..=250).rev() {
             sqrt = sqrt.squared();
             if i != 1 {
-                sqrt = &sqrt * &self;
+                sqrt = &sqrt * self;
             }
         }
 
@@ -246,7 +246,7 @@ impl<'a, 'b> Add<&'b FieldElement> for &'a FieldElement {
     // TODO: TweetNaCl doesn't do any reduction here, why not?
     /// Addition of field elements
     fn add(self, other: &'b FieldElement) -> FieldElement {
-        let mut sum = self.clone();
+        let mut sum = *self;
         sum += other;
         sum
     }
@@ -265,7 +265,7 @@ impl<'a> Neg for &'a FieldElement {
 
     /// Subition of field elements
     fn neg(self) -> FieldElement {
-        let mut negation = self.clone();
+        let mut negation = *self;
         for (i, xi) in self.0.iter().enumerate() {
             negation.0[i] = -xi;
         }
@@ -279,7 +279,7 @@ impl<'a, 'b> Sub<&'b FieldElement> for &'a FieldElement {
     // TODO: TweetNaCl doesn't do any reduction here, why not?
     /// Subition of field elements
     fn sub(self, other: &'b FieldElement) -> FieldElement {
-        let mut difference = self.clone();
+        let mut difference = *self;
         difference -= other;
         difference
     }
@@ -332,7 +332,7 @@ impl<'a, 'b> Mul<&'b FieldElement> for &'a FieldElement {
 
 impl<'b> MulAssign<&'b FieldElement> for FieldElement {
     fn mul_assign(&mut self, other: &'b FieldElement) {
-        let result = (&self as &FieldElement) * other;
+        let result = (self as &FieldElement) * other;
         self.0 = result.0;
     }
 }

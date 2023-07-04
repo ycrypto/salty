@@ -43,7 +43,7 @@ pub struct CompressedY(
 
 impl From<&[u8; COMPRESSED_Y_LENGTH]> for CompressedY {
     fn from(bytes: &[u8; COMPRESSED_Y_LENGTH]) -> CompressedY {
-        CompressedY(bytes.clone())
+        CompressedY(*bytes)
     }
 }
 
@@ -161,8 +161,8 @@ impl EdwardsPoint {
 
         // normalize X, Y to Z = 1
         let z_inverse = &self.0[2].inverse();
-        let x = &self.0[0] * &z_inverse;
-        let y = &self.0[1] * &z_inverse;
+        let x = &self.0[0] * z_inverse;
+        let y = &self.0[1] * z_inverse;
 
         // normalized Y coordinate
         let mut r = y.to_bytes();
@@ -198,23 +198,23 @@ impl EdwardsPoint {
     /// The x-coordinate of the point
     pub fn x(&self) -> FieldElement {
         let z_inverse = &self.0[2].inverse();
-        let x = &self.0[0] * &z_inverse;
-        x
+        
+        &self.0[0] * z_inverse
     }
 
     /// The y-coordinate of the point
     pub fn y(&self) -> FieldElement {
         let z_inverse = &self.0[2].inverse();
-        let y = &self.0[1] * &z_inverse;
-        y
+        
+        &self.0[1] * z_inverse
     }
 
     /// The u-coordinate of the X25519 point
     pub fn u(&self) -> FieldElement {
         let y = self.y();
         let one = FieldElement::ONE;
-        let u = &(&y + &one) * &(&one - &y).inverse();
-        u
+        
+        &(&y + &one) * &(&one - &y).inverse()
     }
 }
 
@@ -274,17 +274,17 @@ impl<'a, 'b> Mul<&'b EdwardsPoint> for &'a Scalar {
 
     fn mul(self, point: &'b EdwardsPoint) -> EdwardsPoint {
         let mut p = EdwardsPoint([
-            FieldElement::ZERO.clone(),
-            FieldElement::ONE.clone(),
-            FieldElement::ONE.clone(),
-            FieldElement::ZERO.clone(),
+            FieldElement::ZERO,
+            FieldElement::ONE,
+            FieldElement::ONE,
+            FieldElement::ZERO,
         ]);
 
-        let mut q = point.clone();
+        let mut q = *point;
         let scalar = self;
 
         for i in (0..=255).rev() {
-            let b = (((scalar.0[i / 8] >> (i & 7)) & 1) as u8).into();
+            let b = ((scalar.0[i / 8] >> (i & 7)) & 1).into();
             EdwardsPoint::conditional_swap(&mut p, &mut q, b);
 
             q = &q + &p;
