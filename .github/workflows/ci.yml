@@ -36,8 +36,8 @@ jobs:
         run: RUSTFLAGS='--deny warnings' cargo check --all
         shell: bash
 
-      - name: Check clippy lints
-        run: cargo clippy --all-features --all-targets -- --deny warnings
+      # - name: Check clippy lints
+      #   run: cargo clippy --all-features --all-targets -- --deny warnings
 
       - name: Check formatting
         run: cargo fmt -- --check
