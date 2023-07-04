@@ -8,24 +8,28 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define salty_COMPRESSED_Y_LENGTH 32
-#define salty_PUBLICKEY_SERIALIZED_LENGTH 32
 #define salty_FIELD_ELEMENT_LENGTH 32
-#define salty_SCALAR_LENGTH 32
-#define salty_SECRETKEY_NONCE_LENGTH 32
-#define salty_SECRETKEY_SCALAR_LENGTH 32
+
+#define salty_PUBLICKEY_SERIALIZED_LENGTH 32
+
 #define salty_SECRETKEY_SEED_LENGTH 32
-#define salty_SECRETKEY_SERIALIZED_LENGTH 32
-#define salty_SHA256_LENGTH 64
-#define salty_SHA512_LENGTH 64
+
 #define salty_SIGNATURE_SERIALIZED_LENGTH 64
+
+#define salty_SHA512_LENGTH 64
+
+/**
+ * Size of an encoded Ed25519 signature in bytes.
+ */
+#define salty_Signature_BYTE_SIZE 64
 
 /**
  * Extensible error type for all `salty` operations.
  *
  * This enum has a hidden member, to prevent exhaustively checking for errors.
+ * It also has a member `NoError` with value zero, for use in the C API.
  */
-typedef enum {
+typedef enum salty_Error {
   /**
    * Never occurs, simplifies C bindings
    */
@@ -68,51 +72,52 @@ void salty_sign(const uint8_t (*seed)[salty_SECRETKEY_SEED_LENGTH],
                 uint8_t (*signature)[salty_SIGNATURE_SERIALIZED_LENGTH]);
 
 /**
- * Signs the data for a context, based on the keypair generated from the secret seed.
+ * Signs the data for a given context, based on the keypair generated
+ * from the secret seed.
  */
-salty_Error salty_sign_with_context(const uint8_t (*seed)[salty_SECRETKEY_SEED_LENGTH],
-                                    const uint8_t *data_ptr,
-                                    uintptr_t data_len,
-                                    const uint8_t *context_ptr,
-                                    uintptr_t context_len,
-                                    uint8_t (*signature)[salty_SIGNATURE_SERIALIZED_LENGTH]);
+enum salty_Error salty_sign_with_context(const uint8_t (*seed)[salty_SECRETKEY_SEED_LENGTH],
+                                         const uint8_t *data_ptr,
+                                         uintptr_t data_len,
+                                         const uint8_t *context_ptr,
+                                         uintptr_t context_len,
+                                         uint8_t (*signature)[salty_SIGNATURE_SERIALIZED_LENGTH]);
 
 /**
  * Signs the prehashed data, based on the keypair generated from the secret seed.
  * An optional context can also be passed (this is recommended).
  */
-salty_Error salty_sign_prehashed(const uint8_t (*seed)[salty_SECRETKEY_SEED_LENGTH],
-                                 const uint8_t (*prehashed_data)[salty_SHA512_LENGTH],
-                                 const uint8_t *context_ptr,
-                                 uintptr_t context_len,
-                                 uint8_t (*signature)[salty_SIGNATURE_SERIALIZED_LENGTH]);
-
-/**
- * Verify a presumed signature on the given data.
- */
-salty_Error salty_verify(const uint8_t (*public_key)[salty_PUBLICKEY_SERIALIZED_LENGTH],
-                         const uint8_t *data_ptr,
-                         uintptr_t data_len,
-                         const uint8_t (*signature)[salty_SIGNATURE_SERIALIZED_LENGTH]);
-
-/**
- * Verify a presumed signature on the given data for a context.
- */
-salty_Error salty_verify_with_context(const uint8_t (*public_key)[salty_PUBLICKEY_SERIALIZED_LENGTH],
-                                      const uint8_t *data_ptr,
-                                      uintptr_t data_len,
+enum salty_Error salty_sign_prehashed(const uint8_t (*seed)[salty_SECRETKEY_SEED_LENGTH],
+                                      const uint8_t (*prehashed_data)[salty_SHA512_LENGTH],
                                       const uint8_t *context_ptr,
                                       uintptr_t context_len,
-                                      const uint8_t (*signature)[salty_SIGNATURE_SERIALIZED_LENGTH]);
+                                      uint8_t (*signature)[salty_SIGNATURE_SERIALIZED_LENGTH]);
 
 /**
  * Verify a presumed signature on the given data.
  */
-salty_Error salty_verify_prehashed(const uint8_t (*public_key)[salty_PUBLICKEY_SERIALIZED_LENGTH],
-                                   const uint8_t (*prehashed_data)[salty_SHA512_LENGTH],
-                                   const uint8_t (*signature)[salty_SIGNATURE_SERIALIZED_LENGTH],
-                                   const uint8_t *context_ptr,
-                                   uintptr_t context_len);
+enum salty_Error salty_verify(const uint8_t (*public_key)[salty_PUBLICKEY_SERIALIZED_LENGTH],
+                              const uint8_t *data_ptr,
+                              uintptr_t data_len,
+                              const uint8_t (*signature)[salty_SIGNATURE_SERIALIZED_LENGTH]);
+
+/**
+ * Verify a presumed signature on the given data.
+ */
+enum salty_Error salty_verify_with_context(const uint8_t (*public_key)[salty_PUBLICKEY_SERIALIZED_LENGTH],
+                                           const uint8_t *data_ptr,
+                                           uintptr_t data_len,
+                                           const uint8_t (*signature)[salty_SIGNATURE_SERIALIZED_LENGTH],
+                                           const uint8_t *context_ptr,
+                                           uintptr_t context_len);
+
+/**
+ * Verify a presumed signature on the given data.
+ */
+enum salty_Error salty_verify_prehashed(const uint8_t (*public_key)[salty_PUBLICKEY_SERIALIZED_LENGTH],
+                                        const uint8_t (*prehashed_data)[salty_SHA512_LENGTH],
+                                        const uint8_t (*signature)[salty_SIGNATURE_SERIALIZED_LENGTH],
+                                        const uint8_t *context_ptr,
+                                        uintptr_t context_len);
 
 /**
  * Perform X25519 key agreement.

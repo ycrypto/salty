@@ -2,7 +2,7 @@
 name = "salty-c-api"
 version = "0.2.0"
 authors = ["Nicolas Stalder <n@stalder.io>"]
-edition = "2018"
+edition = "2021"
 description = "Small, sweet, swift Ed25519 signatures for microcontrollers"
 repository = "https://github.com/nickray/salty"
 license = "Apache-2.0 OR MIT"

@@ -10,9 +10,6 @@ build build-release:
 build-debug:
 	cargo build
 
-c-bindings:
-	cbindgen --config cbindgen.toml --output auto_salty.h
-
 local-docs:
 	cargo doc --document-private-items
 
