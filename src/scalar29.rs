@@ -141,7 +141,7 @@ impl Scalar29 {
     }
 
     /// Pack the limbs of this `Scalar29` into 32 bytes.
-    pub fn to_bytes(&self) -> [u8; 32] {
+    pub fn to_bytes(self) -> [u8; 32] {
         let mut s = [0u8; 32];
 
         s[0] = self.0[0] as u8;
@@ -341,18 +341,8 @@ impl Scalar29 {
     /// Puts a Scalar29 in to Montgomery form, i.e. computes `a*R (mod l)`
     #[inline(never)]
     #[allow(dead_code)]
-    pub fn to_montgomery(&self) -> Scalar29 {
-        Scalar29::montgomery_mul(self, &constants::RR)
-    }
-
-    /// Takes a Scalar29 out of Montgomery form, i.e. computes `a/R (mod l)`
-    #[allow(dead_code)]
-    pub fn from_montgomery(&self) -> Scalar29 {
-        let mut limbs = [0u64; 17];
-        for i in 0..9 {
-            limbs[i] = self[i] as u64;
-        }
-        Scalar29::montgomery_reduce(&limbs)
+    pub fn to_montgomery(self) -> Scalar29 {
+        Scalar29::montgomery_mul(&self, &constants::RR)
     }
 }
 

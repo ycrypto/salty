@@ -31,13 +31,14 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+
       - name: Check that all crates build without warning
         run: RUSTFLAGS='--deny warnings' cargo check --all
         shell: bash
-      # - name: Check clippy output (lenient mode)
-      #   # run: RUSTFLAGS='--deny warnings' cargo clippy --all
-      #   run: cargo clippy --all
-      #   shell: bash
+
+      - name: Check clippy lints
+        run: cargo clippy --all-features --all-targets -- --deny warnings
+
       - name: Check formatting
         run: cargo fmt -- --check
 

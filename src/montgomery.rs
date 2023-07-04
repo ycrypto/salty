@@ -166,7 +166,7 @@ impl ProjectivePoint {
     ///
     /// * \\( u = U / W \\) if \\( W \neq 0 \\);
     /// * \\( 0 \\) if \\( W \eq 0 \\);
-    pub fn to_affine(&self) -> MontgomeryPoint {
+    pub fn to_affine(self) -> MontgomeryPoint {
         let u = &self.U * &self.W.inverse();
         MontgomeryPoint(u)
     }

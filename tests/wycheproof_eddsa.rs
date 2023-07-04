@@ -21,12 +21,12 @@ mod wycheproof {
 
         let valid = match (pk, sk, expected_sig) {
             (Ok(Ok(pk)), Ok(sk), Ok(expected_sig)) => {
-                let result = pk.verify(&test_data.msg, &expected_sig);
+                let result = pk.verify(test_data.msg, &expected_sig);
                 let kp = Keypair {
                     secret: sk,
                     public: pk,
                 };
-                let sig = kp.sign(&test_data.msg);
+                let sig = kp.sign(test_data.msg);
                 result.is_ok() && sig.to_bytes() == test_data.sig
             }
             _ => false,
@@ -37,12 +37,11 @@ mod wycheproof {
             ExpectedResult::Invalid => {
                 if test_data.flags.contains(&"SignatureMalleability") {
                     // accept failing SignatureMalleability tests
-                    assert!(true)
                 } else {
                     assert!(!valid)
                 }
             }
-            ExpectedResult::Acceptable => assert!(true),
+            ExpectedResult::Acceptable => {}
         }
     }
 }

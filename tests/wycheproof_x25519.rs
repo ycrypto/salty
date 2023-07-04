@@ -17,24 +17,27 @@ mod wycheproof {
         let shared_expected = <[u8; 32]>::try_from(test_data.shared);
         let valid: bool;
 
-        if private.is_err() || public.is_err() || shared_expected.is_err() {
-            valid = false;
-        } else {
-            let public = agreement::PublicKey::try_from(public.unwrap());
-            if public.is_err() {
-                valid = false;
-            } else {
-                let private = agreement::SecretKey::from_seed(&private.unwrap());
-                let shared = private.agree(&public.unwrap());
+        match (private, public, shared_expected) {
+            (Ok(private), Ok(public), Ok(shared_expected)) => {
+                let public = agreement::PublicKey::try_from(public);
+                if let Ok(public) = public {
+                    let private = agreement::SecretKey::from_seed(&private);
+                    let shared = private.agree(&public);
 
-                valid = shared.to_bytes() == shared_expected.unwrap();
+                    valid = shared.to_bytes() == shared_expected;
+                } else {
+                    valid = false;
+                }
+            }
+            _ => {
+                valid = false;
             }
         }
 
         match test_data.result {
             ExpectedResult::Valid => assert!(valid),
             ExpectedResult::Invalid => assert!(!valid),
-            ExpectedResult::Acceptable => assert!(true),
+            ExpectedResult::Acceptable => {}
         }
     }
 }

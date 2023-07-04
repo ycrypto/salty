@@ -207,10 +207,10 @@ impl Scalar {
     /// Get the bits of the scalar.
     pub(crate) fn bits(&self) -> [i8; 256] {
         let mut bits = [0i8; 256];
-        for i in 0..256 {
+        for (i, bit) in bits.iter_mut().enumerate() {
             // As i runs from 0..256, the bottom 3 bits index the bit,
             // while the upper bits index the byte.
-            bits[i] = ((self.0[i >> 3] >> (i & 7)) & 1u8) as i8;
+            *bit = ((self.0[i >> 3] >> (i & 7)) & 1u8) as i8;
         }
         bits
     }
