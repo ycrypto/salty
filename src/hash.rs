@@ -204,6 +204,12 @@ pub struct Sha512 {
     data_length: usize,
 }
 
+impl Default for Sha512 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Sha512 {
     pub fn new() -> Sha512 {
         let mut digest: Digest = [0; SHA512_LENGTH];
