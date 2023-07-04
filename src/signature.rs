@@ -171,6 +171,7 @@ impl Keypair {
     }
 }
 
+#[cfg(feature = "rustcrypto")]
 impl ed25519::signature::Signer<ed25519::Signature> for Keypair {
     fn try_sign(
         &self,
@@ -284,6 +285,7 @@ impl PublicKey {
     }
 }
 
+#[cfg(feature = "rustcrypto")]
 impl ed25519::signature::Verifier<ed25519::Signature> for PublicKey {
     fn verify(
         &self,
@@ -392,12 +394,14 @@ impl From<&[u8; SIGNATURE_SERIALIZED_LENGTH]> for Signature {
     }
 }
 
+#[cfg(feature = "rustcrypto")]
 impl From<ed25519::Signature> for Signature {
     fn from(sig: ed25519::Signature) -> Signature {
         (&sig.to_bytes()).into()
     }
 }
 
+#[cfg(feature = "rustcrypto")]
 impl TryFrom<Signature> for ed25519::Signature {
     type Error = ed25519::signature::Error;
 
