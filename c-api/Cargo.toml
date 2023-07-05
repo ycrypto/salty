@@ -1,29 +1,29 @@
 [package]
 name = "salty-c-api"
-version = "0.2.0"
-authors = ["Nicolas Stalder <n@stalder.io>"]
-edition = "2021"
 description = "Small, sweet, swift Ed25519 signatures for microcontrollers"
-repository = "https://github.com/nickray/salty"
-license = "Apache-2.0 OR MIT"
-readme = "README.md"
 keywords = ["no-std", "NaCl", "cryptography", "signatures"]
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+version.workspace = true
 
 [lib]
 crate-type = ["staticlib"]
 
 [dependencies]
-salty = { path = ".." }
+salty.workspace = true
 panic-halt = "0.2"
 
 [features]
 slow-motion = ["salty/slow-motion"]
 
-[profile.release]
-codegen-units = 1
-debug = true
-# using `lto = true` leads to
-# warning: Linking globals named 'salty_public_key': symbol multiply defined!
-# error: failed to load bc of "salty.2a057q60-cgu.0": <Paste>
-lto = "thin"
-opt-level = "s"
+# [profile.release]
+# codegen-units = 1
+# debug = true
+# # using `lto = true` leads to
+# # warning: Linking globals named 'salty_public_key': symbol multiply defined!
+# # error: failed to load bc of "salty.2a057q60-cgu.0": <Paste>
+# lto = "thin"
+# opt-level = "s"

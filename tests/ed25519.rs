@@ -1,16 +1,18 @@
 #[cfg(test)]
 mod wycheproof {
 
-    use wycheproof_gen::test_wycheproof;
-
-    use wycheproof::wycheproof::*;
+    use wycheproof_macros::test_wycheproof;
+    use wycheproof_types::*;
 
     use salty::constants::{
         PUBLICKEY_SERIALIZED_LENGTH, SECRETKEY_SERIALIZED_LENGTH, SIGNATURE_SERIALIZED_LENGTH,
     };
     use salty::{Keypair, PublicKey, SecretKey, Signature};
 
-    #[test_wycheproof("tests/eddsa_test.json", "eddsa_verify_schema.json")]
+    #[test_wycheproof(
+        "wycheproof/data/eddsa_test.json",
+        "wycheproof/data/eddsa_verify_schema.json"
+    )]
     fn eddsa_test_case(test_key: &Key, test_data: &SignatureTestVector) {
         let pk = <[u8; PUBLICKEY_SERIALIZED_LENGTH]>::try_from(test_key.pk)
             .map(|arr| PublicKey::try_from(&arr));

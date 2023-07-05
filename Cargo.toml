@@ -1,31 +1,77 @@
-[package]
-name = "salty"
-version = "0.2.1"
-authors = ["Nicolas Stalder <n@stalder.io>"]
+[workspace]
+members = [
+    ".",
+    "c-api",
+    "qemu-tests",
+    "wycheproof",
+    "wycheproof/macros",
+    "wycheproof/types",
+]
+
+[workspace.package]
+authors = ["The Salty Engineers"]
 edition = "2021"
-description = "Small, sweet, swift Ed25519 signatures for microcontrollers"
-homepage = "https://salty.rs"
-repository = "https://github.com/nickray/salty"
+homepage = "https://github.com/ycrypto/salty"
 license = "Apache-2.0 OR MIT"
 readme = "README.md"
+repository = "https://github.com/ycrypto/salty"
+version = "0.2.1"
+
+[package]
+name = "salty"
+description = "Small, sweet, swift Ed25519 signatures for microcontrollers"
 keywords = ["no-std", "NaCl", "Ed25519", "cryptography", "signatures"]
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
 
-[dependencies]
-cosey = { version = "0.3.0", optional = true }
-subtle = { version = "2.4.0", default-features = false }
-zeroize = { version = "1.2.0", default-features = false }
-ed25519 = { version = "2.2", default-features = false, optional = true }
+[workspace.dependencies]
+salty = { path = "." }
+wycheproof = { path = "wycheproof" }
+wycheproof-macros = { path = "wycheproof/macros" }
+wycheproof-types = { path = "wycheproof/types" }
 
-[dev-dependencies]
+cosey = { version = "0.3.0" }
+ed25519 = { version = "2.2", default-features = false }
 hex = "0.4"
 hex-literal = "0.4"
-wycheproof = { path = "wycheproof" }
-wycheproof-gen = { path = "wycheproof/wycheproof-gen" }
+subtle = { version = "2.4.0", default-features = false }
+zeroize = { version = "1.2.0", default-features = false }
+
+[dependencies]
+subtle.workspace = true
+zeroize.workspace = true
+
+cosey = { workspace = true, optional = true}
+ed25519 = { workspace = true, optional = true}
+
+[dev-dependencies]
+hex.workspace = true
+hex-literal.workspace = true
+wycheproof-macros.workspace = true
+wycheproof-types.workspace = true
 
 [features]
 default = ["rustcrypto"]
 slow-motion = []
 cose = ["cosey"]
 rustcrypto = ["ed25519"]
-# # doubt this will ever finish xD
-# very-long-x25519-test = []
+
+[profile.release.package.salty-c-api]
+codegen-units = 1
+debug = true
+# using `lto = true` leads to
+# warning: Linking globals named 'salty_public_key': symbol multiply defined!
+# error: failed to load bc of "salty.2a057q60-cgu.0": <Paste>
+# lto = "thin"
+opt-level = "s"
+
+[profile.release.package.qemu-tests]
+codegen-units = 1
+debug = true
+# lto = true
+opt-level = "z"

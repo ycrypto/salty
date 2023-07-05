@@ -15,7 +15,7 @@ env:
 jobs:
   test:
     # want QEMU >=4
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Install build dependencies
@@ -32,27 +32,23 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Check that all crates build without warning
-        run: RUSTFLAGS='--deny warnings' cargo check --all
-        shell: bash
-
-      # - name: Check clippy lints
-      #   run: cargo clippy --all-features --all-targets -- --deny warnings
-
-      - name: Check formatting
-        run: cargo fmt -- --check
-
-      - name: Build PC
-        run: cargo build --release
-        shell: bash
-
       - uses: actions-rs/toolchain@v1
         name: Install Rust stable/thumbv7em-none-eabi
         with:
           profile: minimal
           toolchain: stable
           target: thumbv7em-none-eabi
-          override: true
+
+      - name: Check that all crates check without warning
+        run: make check
+
+      - name: Check formatting + lints
+        run: make lint
+
+      - name: Build PC
+        run: cargo build --release
+        shell: bash
+
       - name: Build Cortex-M4
         run: cargo build --release --target thumbv7em-none-eabi
         shell: bash
@@ -70,6 +66,7 @@ jobs:
           toolchain: stable
           target: thumbv8m.main-none-eabi
           override: true
+
       - name: Run all of the tests, including QEMU tests
         run: make test
         shell: bash

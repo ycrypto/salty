@@ -1,15 +1,14 @@
 [package]
 name = "wycheproof"
-version = "0.1.0"
 authors = ["Enrik Berkhan <Enrik.Berkhan@inka.de>"]
-edition = "2018"
-description = "Project Wycheproof tests for salty."
-license = "Apache-2.0 OR MIT"
+description = "Project Wycheproof tests for salty: JSON parser."
+edition.workspace = true
+license.workspace = true
+version = "0.1.0"
 
 [dependencies]
-wycheproof-gen = { path = "wycheproof-gen" }
-
-[build-dependencies]
-
-[workspace]
-members = [ "wycheproof-tests", "wycheproof-gen" ]
+hex-serde  = { version =   "0.1.0" }
+proc-macro2 = "1"
+quote = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = { version =  "1" }
