@@ -1,9 +1,6 @@
 /target
 **/*.rs.bk
 Cargo.lock
-/venv
 **/*.o
 **/*.map
 **/.gdb_history
-/tests/x25519_test.json
-/tests/eddsa_test.json

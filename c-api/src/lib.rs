@@ -1,14 +1,13 @@
 #![no_std]
+// This is about `Error` as return type not being FFI-safe
+// due to it being non-exhaustive
+#![allow(improper_ctypes_definitions)]
 
 extern crate panic_halt;
 
 pub use salty::Error;
 
-use salty::{
-    Keypair,
-    PublicKey,
-    Signature,
-};
+use salty::{Keypair, PublicKey, Signature};
 
 // these are skipped instead of converted to defines
 // if we `pub use salty::constants::{...}`.
@@ -20,6 +19,8 @@ pub const SHA512_LENGTH: usize = 64;
 
 #[no_mangle]
 /// Generates a public key from a secret seed. Use to verify signatures.
+/// # Safety
+/// These are C-bindings
 pub unsafe extern "C" fn salty_public_key(
     seed: &[u8; SECRETKEY_SEED_LENGTH],
     public_key: &mut [u8; PUBLICKEY_SERIALIZED_LENGTH],
@@ -30,6 +31,8 @@ pub unsafe extern "C" fn salty_public_key(
 
 #[no_mangle]
 /// Signs the data, based on the keypair generated from the secret seed.
+/// # Safety
+/// These are C-bindings
 pub unsafe extern "C" fn salty_sign(
     seed: &[u8; SECRETKEY_SEED_LENGTH],
     data_ptr: *const u8,
@@ -39,14 +42,14 @@ pub unsafe extern "C" fn salty_sign(
     let keypair = Keypair::from(seed);
     let data = core::slice::from_raw_parts(data_ptr, data_len);
 
-    signature.copy_from_slice(
-        &keypair.sign(data).to_bytes()
-    );
+    signature.copy_from_slice(&keypair.sign(data).to_bytes());
 }
 
 #[no_mangle]
 /// Signs the data for a given context, based on the keypair generated
 /// from the secret seed.
+/// # Safety
+/// These are C-bindings
 pub unsafe extern "C" fn salty_sign_with_context(
     seed: &[u8; SECRETKEY_SEED_LENGTH],
     data_ptr: *const u8,
@@ -62,16 +65,15 @@ pub unsafe extern "C" fn salty_sign_with_context(
     let data = core::slice::from_raw_parts(data_ptr, data_len);
     let context = core::slice::from_raw_parts(context_ptr, context_len);
 
-    signature.copy_from_slice(
-        &keypair.sign_with_context(data, context)
-        .to_bytes()
-    );
+    signature.copy_from_slice(&keypair.sign_with_context(data, context).to_bytes());
     Error::NoError
 }
 
 #[no_mangle]
 /// Signs the prehashed data, based on the keypair generated from the secret seed.
 /// An optional context can also be passed (this is recommended).
+/// # Safety
+/// These are C-bindings
 pub unsafe extern "C" fn salty_sign_prehashed(
     seed: &[u8; SECRETKEY_SEED_LENGTH],
     prehashed_data: &[u8; SHA512_LENGTH],
@@ -86,8 +88,9 @@ pub unsafe extern "C" fn salty_sign_prehashed(
     let context = core::slice::from_raw_parts(context_ptr, context_len);
 
     signature.copy_from_slice(
-        &keypair.sign_prehashed(prehashed_data, Some(context))
-        .to_bytes()
+        &keypair
+            .sign_prehashed(prehashed_data, Some(context))
+            .to_bytes(),
     );
 
     Error::NoError
@@ -95,6 +98,8 @@ pub unsafe extern "C" fn salty_sign_prehashed(
 
 #[no_mangle]
 /// Verify a presumed signature on the given data.
+/// # Safety
+/// These are C-bindings
 pub unsafe extern "C" fn salty_verify(
     public_key: &[u8; PUBLICKEY_SERIALIZED_LENGTH],
     data_ptr: *const u8,
@@ -103,7 +108,7 @@ pub unsafe extern "C" fn salty_verify(
 ) -> Error {
     let maybe_public_key = PublicKey::try_from(public_key);
     if maybe_public_key.is_err() {
-        return maybe_public_key.err().unwrap()
+        return maybe_public_key.err().unwrap();
     }
     let public_key = maybe_public_key.unwrap();
 
@@ -112,13 +117,15 @@ pub unsafe extern "C" fn salty_verify(
     let verification = public_key.verify(data, &signature);
 
     if verification.is_err() {
-        return verification.err().unwrap()
+        return verification.err().unwrap();
     }
-    return Error::NoError;
+    Error::NoError
 }
 
 #[no_mangle]
 /// Verify a presumed signature on the given data.
+/// # Safety
+/// These are C-bindings
 pub unsafe extern "C" fn salty_verify_with_context(
     public_key: &[u8; PUBLICKEY_SERIALIZED_LENGTH],
     data_ptr: *const u8,
@@ -132,7 +139,7 @@ pub unsafe extern "C" fn salty_verify_with_context(
     }
     let maybe_public_key = PublicKey::try_from(public_key);
     if maybe_public_key.is_err() {
-        return maybe_public_key.err().unwrap()
+        return maybe_public_key.err().unwrap();
     }
     let public_key = maybe_public_key.unwrap();
 
@@ -141,13 +148,15 @@ pub unsafe extern "C" fn salty_verify_with_context(
     let context = core::slice::from_raw_parts(context_ptr, context_len);
     let verification = public_key.verify_with_context(data, &signature, context);
     if verification.is_err() {
-        return verification.err().unwrap()
+        return verification.err().unwrap();
     }
-    return Error::NoError;
+    Error::NoError
 }
 
 #[no_mangle]
 /// Verify a presumed signature on the given data.
+/// # Safety
+/// These are C-bindings
 pub unsafe extern "C" fn salty_verify_prehashed(
     public_key: &[u8; PUBLICKEY_SERIALIZED_LENGTH],
     prehashed_data: &[u8; SHA512_LENGTH],
@@ -160,20 +169,22 @@ pub unsafe extern "C" fn salty_verify_prehashed(
     }
     let maybe_public_key = PublicKey::try_from(public_key);
     if maybe_public_key.is_err() {
-        return maybe_public_key.err().unwrap()
+        return maybe_public_key.err().unwrap();
     }
     let public_key = maybe_public_key.unwrap();
     let signature = Signature::from(signature);
     let context = core::slice::from_raw_parts(context_ptr, context_len);
     let verification = public_key.verify_prehashed(prehashed_data, &signature, Some(context));
     if verification.is_err() {
-        return verification.err().unwrap()
+        return verification.err().unwrap();
     }
-    return Error::NoError;
+    Error::NoError
 }
 
 #[no_mangle]
 /// Perform X25519 key agreement.
+/// # Safety
+/// These are C-bindings
 pub unsafe extern "C" fn salty_agree(
     scalar: &[u8; SECRETKEY_SEED_LENGTH],
     input_u: &[u8; FIELD_ELEMENT_LENGTH],
@@ -182,4 +193,3 @@ pub unsafe extern "C" fn salty_agree(
     let shared_secret = salty::agreement::x25519(*scalar, *input_u);
     output_u.copy_from_slice(&shared_secret);
 }
-

@@ -1,46 +1,52 @@
-TARGET ?= thumbv7em-none-eabihf
-WYCHEPROOF_EDDSA_TEST_JSON_URL  ?= https://raw.githubusercontent.com/google/wycheproof/master/testvectors/eddsa_test.json
-WYCHEPROOF_X25519_TEST_JSON_URL ?= https://raw.githubusercontent.com/google/wycheproof/master/testvectors/x25519_test.json
-
-build build-release:
+build:
 	cargo build --release
 	cargo build --release --target thumbv7em-none-eabi
-	cargo build --release --features slow-motion --target thumbv7em-none-eabi
 
-build-debug:
-	cargo build
+test:
+	# Test on PC
+	cargo test
+	# Test on QEMU
+	make -C qemu-tests test
+
+fmt:
+	cargo fmt --all
+
+fix: fmt
+	cargo clippy --fix --workspace --allow-staged
+
+# used in CI
+check:
+	# cargo check --all
+	cargo check -p salty
+	cargo check -p salty-c-api --target thumbv7em-none-eabi
+	cargo check -p qemu-tests
+	cargo check -p wycheproof
+	cargo check -p wycheproof-macros
+	cargo check -p wycheproof-types
+
+# used in CI
+lint:
+	cargo fmt --check --all
+	# cargo clippy --workspace
+	cargo clippy -p salty
+	cargo clippy -p salty-c-api --target thumbv7em-none-eabi
+	cargo clippy -p qemu-tests
+	cargo clippy -p wycheproof
+	cargo clippy -p wycheproof-macros
+	cargo clippy -p wycheproof-types
 
 local-docs:
 	cargo doc --document-private-items
 
-fmt:
-	cargo fmt
+rustup-targets:
+	rustup target add thumbv7em-none-eabi
+	rustup target add thumbv8m.main-none-eabi
 
-rustup:
-	rustup target add $(TARGET)
-	rustup component add rustfmt
-
-tests/eddsa_test.json:
-	curl -sSf "$(WYCHEPROOF_EDDSA_TEST_JSON_URL)" -o $@
-
-tests/x25519_test.json:
-	curl -sSf "$(WYCHEPROOF_X25519_TEST_JSON_URL)" -o $@
-
-test: tests/eddsa_test.json tests/x25519_test.json
-	cargo test
-	make -C qemu-tests test
-
-.PHONY: venv
-# re-run as necessary
-venv:
-	python3 -m venv venv
-	venv/bin/pip install -U pip
-	venv/bin/pip install -U -r requirements.txt
-
-watch:
-	cargo watch -x 'build --release'
-
-clean:
-	rm -f tests/eddsa_test.json
-	rm -f tests/x25519_test.json
-	cargo clean
+WP_VECTOR_SOURCE = https://raw.githubusercontent.com/google/wycheproof/master/testvectors
+WP_SCHEMA_SOURCE = https://raw.githubusercontent.com/google/wycheproof/master/schemas
+WP_DATA = wycheproof/data
+update-wycheproof-data:
+	curl -sSf $(WP_VECTOR_SOURCE)/eddsa_test.json -o $(WP_DATA)/eddsa_test.json
+	curl -sSf $(WP_SCHEMA_SOURCE)/eddsa_verify_schema.json -o $(WP_DATA)/eddsa_verify_schema.json
+	curl -sSf $(WP_VECTOR_SOURCE)/x25519_test.json -o $(WP_DATA)/x25519_test.json
+	curl -sSf $(WP_SCHEMA_SOURCE)/xdh_comp_schema.json -o $(WP_DATA)/xdh_comp_schema.json

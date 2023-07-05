@@ -79,7 +79,7 @@ impl FieldImplementation for FieldElement {
 
     fn to_bytes(&self) -> [u8; 32] {
         // make our own private copy
-        let mut fe = self.clone();
+        let mut fe = *self;
         FieldElement::reduce_completely(&mut fe);
         unsafe { core::mem::transmute(fe.0) }
     }
@@ -97,14 +97,14 @@ impl FieldImplementation for FieldElement {
     fn inverse(&self) -> FieldElement {
         // TODO: replace by Haase's version in `fe25519_invert.c`
 
-        let mut inverse = self.clone();
+        let mut inverse = *self;
 
         // exponentiate with 2**255 - 21,
         // which by Fermat's little theorem is the same as inversion
         for i in (0..=253).rev() {
             inverse = inverse.squared();
             if i != 2 && i != 4 {
-                inverse = &inverse * &self;
+                inverse = &inverse * self;
             }
         }
 
@@ -123,12 +123,12 @@ impl FieldImplementation for FieldElement {
     fn pow2523(&self) -> FieldElement {
         // TODO: replace by Haase's version in `fe25519_pow2523.c`
 
-        let mut sqrt = self.clone();
+        let mut sqrt = *self;
 
         for i in (0..=250).rev() {
             sqrt = sqrt.squared();
             if i != 1 {
-                sqrt = &sqrt * &self;
+                sqrt = &sqrt * self;
             }
         }
 
@@ -166,7 +166,7 @@ impl<'a, 'b> Add<&'b FieldElement> for &'a FieldElement {
 
 impl<'b> AddAssign<&'b FieldElement> for FieldElement {
     fn add_assign(&mut self, other: &'b FieldElement) {
-        *self = (self as &FieldElement) + &other;
+        *self = (self as &FieldElement) + other;
     }
 }
 
@@ -174,8 +174,7 @@ impl<'a> Neg for &'a FieldElement {
     type Output = FieldElement;
 
     fn neg(self) -> FieldElement {
-        let negation = &FieldElement::ZERO - &self;
-        negation
+        &FieldElement::ZERO - self
     }
 }
 
@@ -197,11 +196,11 @@ impl<'a, 'b> Sub<&'b FieldElement> for &'a FieldElement {
         // "-1" here
         accu = ((((accu >> 31) as i32) - 1) * 19) as i64;
 
-        for i in 0..7 {
+        for (i, difference) in difference.iter_mut().take(7).enumerate() {
             accu += self.0[i] as i64;
             accu -= other.0[i] as i64;
 
-            difference[i] = accu as u32;
+            *difference = accu as u32;
             accu >>= 32;
         }
 

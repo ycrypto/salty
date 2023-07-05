@@ -1,4 +1,4 @@
-#![cfg_attr(not(test), no_std)]
+#![no_std]
 /*!
 Mashup of [TweetNaCl](https://tweetnacl.cr.yp.to/) with
 [ed25519-dalek](https://lib.rs/crates/ed25519-dalek)

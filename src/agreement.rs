@@ -26,8 +26,7 @@ pub struct SecretKey(pub(crate) Scalar);
 pub struct SharedSecret(pub(crate) MontgomeryPoint);
 
 impl From<[u8; 32]> for PublicKey {
-    /// Given a byte array, construct a x25519 `PublicKey`. It may fail if some
-    /// underlying checks fail.
+    /// Given a byte array, construct a x25519 `PublicKey`.
     fn from(bytes: [u8; 32]) -> Self {
         let field_element = FieldElement::from_unreduced_bytes(&bytes);
         PublicKey(MontgomeryPoint(field_element))
@@ -100,19 +99,6 @@ fn clamp_scalar(mut scalar: [u8; 32]) -> Scalar {
     Scalar(scalar)
 }
 
-/// Construct a `Scalar` from the low 255 bits of a 256-bit integer.
-///
-/// This function is intended for applications like X25519 which
-/// require specific bit-patterns when performing scalar
-/// multiplication.
-pub fn make_255_bit(bytes: [u8; 32]) -> FieldElement {
-    let mut bytes = bytes;
-    // Ensure that s < 2^255 by masking the high bit
-    bytes[31] &= 0b0111_1111;
-
-    FieldElement::from_unreduced_bytes(&bytes)
-}
-
 /// Implementations:
 /// - MUST mask highest bit in input_u
 /// - MUST accept non-canonical input_u, reduce modulo base field
@@ -122,9 +108,7 @@ pub fn x25519(scalar: [u8; 32], input_u: [u8; 32]) -> [u8; 32] {
     let scalar = clamp_scalar(scalar);
     let secret_key = SecretKey(scalar);
 
-    let input_u = make_255_bit(input_u);
-    let input_point = MontgomeryPoint(input_u);
-    let public_key = PublicKey(input_point);
+    let public_key = PublicKey::from(input_u);
 
     let agreed_secret = secret_key.agree(&public_key);
 
@@ -173,10 +157,7 @@ mod tests {
         let scalar = clamp_scalar(load_bytes(input_scalar));
         let secret_key = SecretKey(scalar);
 
-        // see above x25519 function...
-        let input_u = make_255_bit(load_bytes(input_u));
-        let input_point = MontgomeryPoint(input_u);
-        let public_key = PublicKey(input_point);
+        let public_key = PublicKey::from(load_bytes(input_u));
 
         let agreed_secret = secret_key.agree(&public_key);
 

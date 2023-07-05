@@ -1,4 +1,4 @@
-TARGET = thumbv7em-none-eabihf
+TARGET = thumbv7em-none-eabi
 build:
 	cargo build --release --target $(TARGET)
 	cp target/$(TARGET)/release/build/salty-*/out/libsalty-asm.a libsalty-asm.a

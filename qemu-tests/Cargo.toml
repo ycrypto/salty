@@ -1,36 +1,26 @@
 [package]
 name = "qemu-tests"
-version = "0.0.0"
-authors = ["Nicolas Stalder <n@stalder.io>"]
-edition = "2021"
 description = "Test salty using QEMU musca-b1"
-license = "Apache-2.0 OR MIT"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+version.workspace = true
 
 [dependencies]
+hex-literal.workspace = true
+salty.workspace = true
+wycheproof-macros.workspace = true
+wycheproof-types.workspace = true
+
 cortex-m = "0.6.1"
 cortex-m-rt = "0.6.10"
 cortex-m-semihosting = "0.3.5"
-hex-literal = "0.2.1"
 panic-semihosting = { version = "0.5.3", features = ["exit"] }
-salty = { path = ".." }
-# subtle = { version = "2.2", default-features = false }
-wycheproof = { version = "0.1", path = "../wycheproof" }
-wycheproof-gen = { version = "0.1", path = "../wycheproof/wycheproof-gen" }
-
-[profile.release]
-codegen-units = 1
-debug = true
-lto = true
-opt-level = "z"
 
 [[bin]]
-name = "qemu-tests"
-path = "src/main.rs"
+name = "ed25519"
+path = "src/ed25519.rs"
 
 [[bin]]
-name = "eddsa_verify"
-path = "src/bin/eddsa_verify_on_target/main.rs"
-
-[[bin]]
-name = "x25519_comp"
-path = "src/bin/x25519_on_target/main.rs"
+name = "x25519"
+path = "src/x25519.rs"
