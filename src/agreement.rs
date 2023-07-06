@@ -5,6 +5,7 @@ use crate::{
     montgomery::MontgomeryPoint,
     scalar::Scalar,
 };
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 #[derive(PartialEq, Eq, /*Hash,*/ Copy, Clone, Debug)]
 pub struct PublicKey(pub(crate) MontgomeryPoint);
@@ -13,16 +14,13 @@ pub struct PublicKey(pub(crate) MontgomeryPoint);
 ///
 /// This is a wrapper around a `Scalar`. To obtain the corresponding `PublicKey`,
 /// use `PublicKey::from(&secret_key)`.
-// #[derive(Zeroize)]
-// #[zeroize(drop)]
-#[derive(Clone /*, Zeroize*/)]
+#[derive(Clone)]
 pub struct SecretKey(pub(crate) Scalar);
 
 /// The result of a Diffie-Hellman key exchange.
 ///
 /// Each party computes this using their [`SecretKey`] and their counterparty's [`PublicKey`].
-// #[derive(Zeroize)]
-// #[zeroize(drop)]
+#[derive(Clone, Zeroize, ZeroizeOnDrop)]
 pub struct SharedSecret(pub(crate) MontgomeryPoint);
 
 impl From<[u8; 32]> for PublicKey {
@@ -76,6 +74,11 @@ impl SecretKey {
     /// Extract this key's bytes for serialization.
     pub fn to_bytes(&self) -> [u8; 32] {
         self.0.to_bytes()
+    }
+
+    /// Corresponding public key.
+    pub fn public(&self) -> PublicKey {
+        self.into()
     }
 }
 
@@ -225,11 +228,23 @@ mod tests {
     #[test]
     fn zeroize_on_drop() {
         let mut secret = SecretKey::from_seed(&[1u8; 32]);
+        let public = PublicKey::from([2u8; 32]);
+        let mut shared_secret = secret.agree(&public);
+
+        assert_ne!(secret.0.as_bytes(), &[0u8; 32]);
 
         unsafe {
             core::ptr::drop_in_place(&mut secret);
         }
 
         assert_eq!(secret.0.as_bytes(), &[0u8; 32]);
+
+        assert_ne!(shared_secret.0.to_bytes(), [0u8; 32]);
+
+        unsafe {
+            core::ptr::drop_in_place(&mut shared_secret);
+        }
+
+        assert_eq!(shared_secret.0.to_bytes(), [0u8; 32]);
     }
 }
