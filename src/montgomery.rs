@@ -10,38 +10,26 @@ use core::ops::{
 use subtle::Choice;
 use subtle::ConditionallySelectable;
 use subtle::ConstantTimeEq;
-// use zeroize::Zeroize;
+use zeroize::Zeroize;
 
 use crate::{
-    // constants::COMPRESSED_Y_LENGTH,
     edwards::{CompressedY as CompressedEdwardsY, EdwardsPoint},
     field::{FieldElement, FieldImplementation as _},
     scalar::Scalar,
-    Error,
-    Result,
+    Error, Result,
 };
 
 // #[derive(Clone,Copy,Debug,Default)]
 /// Holds the \\(u\\)-coordinate of a point on the Montgomery form of
 /// Curve25519 or its twist.
-#[derive(Clone, Copy, Debug, Default /*,Hash*/)]
+#[derive(Clone, Copy, Debug, Default, Zeroize)]
 pub struct MontgomeryPoint(pub FieldElement);
 
 impl ConstantTimeEq for MontgomeryPoint {
     fn ct_eq(&self, other: &MontgomeryPoint) -> Choice {
-        // let self_fe = FieldElement::from_bytes(&self.0);
-        // let other_fe = FieldElement::from_bytes(&other.0);
-
-        // self_fe.ct_eq(&other_fe)
         self.0.ct_eq(&other.0)
     }
 }
-
-// impl Default for MontgomeryPoint {
-//     fn default() -> MontgomeryPoint {
-//         MontgomeryPoint([0u8; 32])
-//     }
-// }
 
 impl PartialEq for MontgomeryPoint {
     fn eq(&self, other: &MontgomeryPoint) -> bool {
@@ -51,12 +39,6 @@ impl PartialEq for MontgomeryPoint {
 }
 
 impl Eq for MontgomeryPoint {}
-
-// impl Zeroize for MontgomeryPoint {
-//     fn zeroize(&mut self) {
-//         self.0.zeroize();
-//     }
-// }
 
 impl MontgomeryPoint {
     // /// View this `MontgomeryPoint` as an array of bytes.

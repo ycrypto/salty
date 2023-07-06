@@ -12,10 +12,8 @@ pub type U512le = [u8; 64];
 /// structure, consisting of these scalars. They are the
 /// integers modulo "ell", where "ell" is 2**252 + something something.
 #[repr(C)]
-#[derive(Clone, Debug,Default,PartialEq, Zeroize, ZeroizeOnDrop)]
-pub struct Scalar(
-    pub [u8; SCALAR_LENGTH]
-);
+#[derive(Clone, Debug, Default, PartialEq, Zeroize, ZeroizeOnDrop)]
+pub struct Scalar(pub [u8; SCALAR_LENGTH]);
 
 type UnpackedScalar = crate::scalar29::Scalar29;
 
