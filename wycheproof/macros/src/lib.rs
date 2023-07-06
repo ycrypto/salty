@@ -25,7 +25,7 @@ pub fn generate_data(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as TestDataArgs);
 
     let testdata = std::fs::read_to_string(&input.fname).unwrap();
-    let test: wycheproof::WycheproofTest = serde_json::from_str(&testdata).unwrap();
+    let test: wycheproof_parser::WycheproofTest = serde_json::from_str(&testdata).unwrap();
 
     if !input.schema.ends_with(&test.schema) {
         dbg!(&test.schema);
@@ -44,7 +44,7 @@ pub fn test_wycheproof(args: TokenStream, func: TokenStream) -> TokenStream {
     let TestDataArgs { fname, schema } = parse_macro_input!(args as TestDataArgs);
 
     let testdata = std::fs::read_to_string(&fname).unwrap();
-    let testdata: wycheproof::WycheproofTest = serde_json::from_str(&testdata).unwrap();
+    let testdata: wycheproof_parser::WycheproofTest = serde_json::from_str(&testdata).unwrap();
 
     if !schema.ends_with(&testdata.schema) {
         panic!("JSON schemas do not match!");
@@ -56,7 +56,7 @@ pub fn test_wycheproof(args: TokenStream, func: TokenStream) -> TokenStream {
 
     for testgroup in &testdata.test_groups {
         match testgroup {
-            wycheproof::TestGroup::EddsaVerify { key, tests } => {
+            wycheproof_parser::TestGroup::EddsaVerify { key, tests } => {
                 for testcase in tests {
                     let test_name = format!("{}_{}", func_ident, testcase.tc_id);
                     let test_ident =
@@ -72,7 +72,7 @@ pub fn test_wycheproof(args: TokenStream, func: TokenStream) -> TokenStream {
                 }
             }
 
-            wycheproof::TestGroup::XdhComp { curve, tests } => {
+            wycheproof_parser::TestGroup::XdhComp { curve, tests } => {
                 for testcase in tests {
                     let test_name = format!("{}_{}", func_ident, testcase.tc_id);
                     let test_ident =

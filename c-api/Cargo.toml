@@ -14,7 +14,7 @@ crate-type = ["staticlib"]
 
 [dependencies]
 salty.workspace = true
-panic-halt = "0.2"
+panic-halt.workspace = true
 
 [features]
 slow-motion = ["salty/slow-motion"]

@@ -20,8 +20,8 @@ check:
 	cargo check -p salty
 	cargo check -p salty-c-api --target thumbv7em-none-eabi
 	cargo check -p qemu-tests
-	cargo check -p wycheproof
 	cargo check -p wycheproof-macros
+	cargo check -p wycheproof-parser
 	cargo check -p wycheproof-types
 
 # used in CI
@@ -31,8 +31,8 @@ lint:
 	cargo clippy -p salty
 	cargo clippy -p salty-c-api --target thumbv7em-none-eabi
 	cargo clippy -p qemu-tests
-	cargo clippy -p wycheproof
 	cargo clippy -p wycheproof-macros
+	cargo clippy -p wycheproof-parser
 	cargo clippy -p wycheproof-types
 
 local-docs:

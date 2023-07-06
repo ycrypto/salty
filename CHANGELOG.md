@@ -13,3 +13,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - make dependency on RustCrypto/ed25519 a feature
 - run wycheproof on signing, not just verification (#28)
 - check more in ci.yml
+- ZeroizeOnDrop secrets (#26)
+- reorganize wycheproof
