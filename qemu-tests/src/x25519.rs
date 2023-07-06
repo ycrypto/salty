@@ -22,7 +22,7 @@ const EXEMPTED_FAILURES: &[u32] = &[128, 141, 151];
 
 #[entry]
 fn main() -> ! {
-    hprint!("running tests...\n").ok();
+    hprint!("running tests...\n");
 
     let mut known_failures: usize = 0;
     for testgroup in THE_TESTS.test_groups {
@@ -37,9 +37,8 @@ fn main() -> ! {
         "{} test cases failed among the exemption list {:?}",
         known_failures,
         EXEMPTED_FAILURES
-    )
-    .ok();
-    hprintln!("done.").ok();
+    );
+    hprintln!("done.");
 
     debug::exit(debug::EXIT_SUCCESS);
     loop {
@@ -52,14 +51,14 @@ fn fail(tc_id: u32) -> bool {
     if !EXEMPTED_FAILURES.iter().any(|&id| id == tc_id) {
         debug::exit(debug::EXIT_FAILURE);
     }
-    hprintln!("NOT FAILING due to exemption - do investigate").ok();
+    hprintln!("NOT FAILING due to exemption - do investigate");
     true
 }
 
 /// Returns `true` on (exempted) failure, `false` on pass
 fn run_x25519_comparison(_curve: &str, test_data: &XdhTestVector) -> bool {
     let tc_id = test_data.tc_id;
-    hprint!("X25519 test case {:4}: ", tc_id).ok();
+    hprint!("X25519 test case {:4}: ", tc_id);
 
     let private = <[u8; SECRETKEY_SEED_LENGTH]>::try_from(test_data.private);
     let public = <[u8; PUBLICKEY_SERIALIZED_LENGTH]>::try_from(test_data.public);
@@ -79,25 +78,25 @@ fn run_x25519_comparison(_curve: &str, test_data: &XdhTestVector) -> bool {
     match test_data.result {
         ExpectedResult::Valid => {
             if !valid {
-                hprintln!("FAIL (expected VALID, but isn't)").ok();
+                hprintln!("FAIL (expected VALID, but isn't)");
                 return fail(tc_id);
             } else {
-                hprintln!("OK (valid input)").ok();
+                hprintln!("OK (valid input)");
             }
         }
         ExpectedResult::Invalid => {
             if valid {
-                hprintln!("FAIL (expected INVALID, but isn't)").ok();
+                hprintln!("FAIL (expected INVALID, but isn't)");
                 return fail(tc_id);
             } else {
-                hprintln!("OK (invalid input)").ok();
+                hprintln!("OK (invalid input)");
             }
         }
         ExpectedResult::Acceptable => {
             if valid {
-                hprintln!("ACCEPTABLE (valid)").ok();
+                hprintln!("ACCEPTABLE (valid)");
             } else {
-                hprintln!("ACCEPTABLE (invalid)").ok();
+                hprintln!("ACCEPTABLE (invalid)");
             }
         }
     }

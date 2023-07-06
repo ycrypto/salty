@@ -22,7 +22,7 @@ const THE_TESTS: WycheproofTest = generate_data!(
 
 #[entry]
 fn main() -> ! {
-    hprint!("running tests...\n").ok();
+    hprint!("running tests...\n");
 
     for testgroup in THE_TESTS.test_groups {
         if let TestGroup::EddsaVerify { key, tests } = testgroup {
@@ -42,7 +42,7 @@ fn main() -> ! {
         }
     }
 
-    hprintln!("done.").ok();
+    hprintln!("done.");
 
     debug::exit(debug::EXIT_SUCCESS);
     loop {
@@ -58,7 +58,7 @@ fn fail() {
 }
 
 fn run_eddsa_verify(test_key: &Key, test_data: &SignatureTestVector) {
-    hprint!("EddsaVerify test case {:4}: ", test_data.tc_id).ok();
+    hprint!("EddsaVerify test case {:4}: ", test_data.tc_id);
 
     let pk = <[u8; PUBLICKEY_SERIALIZED_LENGTH]>::try_from(test_key.pk);
     let sig = <[u8; SIGNATURE_SERIALIZED_LENGTH]>::try_from(test_data.sig);
@@ -78,33 +78,32 @@ fn run_eddsa_verify(test_key: &Key, test_data: &SignatureTestVector) {
     match test_data.result {
         ExpectedResult::Valid => {
             if !valid {
-                hprintln!("FAIL (expected VALID, but isn't)").ok();
+                hprintln!("FAIL (expected VALID, but isn't)");
                 fail();
             } else {
-                hprintln!("OK (valid input)").ok();
+                hprintln!("OK (valid input)");
             }
         }
         ExpectedResult::Invalid => {
             if valid {
                 if test_data.flags.contains(&"SignatureMalleability") {
-                    hprintln!("ALLOW FAIL for SignatureMalleability (expected INVALID, but isn't)")
-                        .ok();
+                    hprintln!("ALLOW FAIL for SignatureMalleability (expected INVALID, but isn't)");
                 } else {
-                    hprintln!("FAIL (expected INVALID, but isn't)").ok();
+                    hprintln!("FAIL (expected INVALID, but isn't)");
                     fail();
                 }
             } else {
-                hprintln!("OK (invalid input)").ok();
+                hprintln!("OK (invalid input)");
             }
         }
         ExpectedResult::Acceptable => {
-            hprintln!("ACCEPTABLE in any case").ok();
+            hprintln!("ACCEPTABLE in any case");
         }
     }
 }
 
 fn test_eddsa_sign(test_key: &Key, test_data: &SignatureTestVector) {
-    hprint!("EddsaVerify test sign {:4}: ", test_data.tc_id).ok();
+    hprint!("EddsaVerify test sign {:4}: ", test_data.tc_id);
 
     let sk = <[u8; SECRETKEY_SEED_LENGTH]>::try_from(test_key.sk);
     let sig = <[u8; SIGNATURE_SERIALIZED_LENGTH]>::try_from(test_data.sig);
@@ -120,9 +119,9 @@ fn test_eddsa_sign(test_key: &Key, test_data: &SignatureTestVector) {
     };
 
     if valid {
-        hprintln!("OK").ok();
+        hprintln!("OK");
     } else {
-        hprintln!("FAIL signatures do not match").ok();
+        hprintln!("FAIL signatures do not match");
         fail();
     }
 }
