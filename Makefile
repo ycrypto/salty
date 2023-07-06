@@ -2,11 +2,17 @@ build:
 	cargo build --release
 	cargo build --release --target thumbv7em-none-eabi
 
+clean:
+	cargo clean
+	make -C c-api clean
+
 test:
 	# Test on PC
 	cargo test
 	# Test on QEMU
 	make -C qemu-tests test
+	# Test C API
+	make -C c-api test
 
 fmt:
 	cargo fmt --all

@@ -1,10 +1,10 @@
-TARGET = thumbv7em-none-eabi
+TARGET = thumbv7em-none-eabihf
 build:
 	cargo build --release --target $(TARGET)
-	cp target/$(TARGET)/release/build/salty-*/out/libsalty-asm.a libsalty-asm.a
-	cp target/$(TARGET)/release/libsalty_c_api.a libsalty.a
+	cp ../target/$(TARGET)/release/build/salty-*/out/libsalty-asm.a libsalty-asm.a
+	cp ../target/$(TARGET)/release/libsalty_c_api.a libsalty.a
 	cargo build --target $(TARGET)
-	cp target/$(TARGET)/debug/libsalty_c_api.a libsalty-debug.a
+	cp ../target/$(TARGET)/debug/libsalty_c_api.a libsalty-debug.a
 
 deep-clean: clean
 
@@ -12,13 +12,17 @@ clean:
 	cargo clean
 	make -C example clean
 
+test: run-example
+
 c-bindings:
 	cbindgen --config cbindgen.toml --lang c --output salty.h
 
 libopencm3/lib/libopencm3_stm32f4.a:
+	ls -lh
+	ls -lh libopencm3
 	$(MAKE) -C libopencm3
 
-example/example.elf: libopencm3/lib/libopencm3_stm32f4.a
+example/example.elf: build libopencm3/lib/libopencm3_stm32f4.a
 	$(MAKE) -C example
 
 build-example: example/example.elf

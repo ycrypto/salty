@@ -17,27 +17,23 @@ jobs:
     # want QEMU >=4
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - uses: RustCrypto/actions/cargo-cache@master
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: thumbv7em-none-eabi,thumbv7em-none-eabihf,thumbv8m.main-none-eabi
+      - uses: carlosperate/arm-none-eabi-gcc-action@v1
+
       - name: Install build dependencies
         shell: bash
         run: |
           sudo apt-get update -y -qq >/dev/null
-          sudo apt-get install -y -qq llvm libc6-dev-i386 libclang-dev make time >/dev/null
+          sudo apt-get install -y -qq llvm libc6-dev-i386 libclang-dev make time qemu-system-arm >/dev/null
           cc --version
-
-      - uses: actions-rs/toolchain@v1
-        name: Install Rust stable/x86_64-unknown-linux-gnu
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-
-      - uses: actions-rs/toolchain@v1
-        name: Install Rust stable/thumbv7em-none-eabi
-        with:
-          profile: minimal
-          toolchain: stable
-          target: thumbv7em-none-eabi
+          qemu-system-arm --version
+          arm-none-eabi-gcc --version
 
       - name: Check that all crates check without warning
         run: make check
@@ -49,23 +45,9 @@ jobs:
         run: cargo build --release
         shell: bash
 
-      - name: Build Cortex-M4
+      - name: Build Cortex-M4 (soft)
         run: cargo build --release --target thumbv7em-none-eabi
         shell: bash
-
-      - name: Install QEMU (>=4)
-        run: |
-          sudo apt-get update -qq >/dev/null
-          sudo apt-get install -qq qemu-system-arm >/dev/null
-          qemu-system-arm --version
-
-      - uses: actions-rs/toolchain@v1
-        name: Install Rust stable/thumbv8m.main-none-eabi
-        with:
-          profile: minimal
-          toolchain: stable
-          target: thumbv8m.main-none-eabi
-          override: true
 
       - name: Run all of the tests, including QEMU tests
         run: make test
