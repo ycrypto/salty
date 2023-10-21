@@ -15,7 +15,7 @@ homepage = "https://github.com/ycrypto/salty"
 license = "Apache-2.0 OR MIT"
 readme = "README.md"
 repository = "https://github.com/ycrypto/salty"
-version = "0.2.1"
+version = "0.3.0"
 
 [package]
 name = "salty"
