@@ -35,7 +35,7 @@ wycheproof-macros = { path = "wycheproof/macros" }
 wycheproof-parser = { path = "wycheproof/parser" }
 wycheproof-types = { path = "wycheproof/types" }
 
-cosey = { version = "0.3" }
+cosey = { version = "0.4" }
 ed25519 = { version = "2.2", default-features = false }
 hex = "0.4"
 hex-literal = "0.4"

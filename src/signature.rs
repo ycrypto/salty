@@ -316,7 +316,7 @@ impl PublicKey {
 impl From<PublicKey> for CosePublicKey {
     fn from(key: PublicKey) -> CosePublicKey {
         CosePublicKey {
-            x: cosey::Bytes::from_slice(key.as_bytes().as_ref()).unwrap(),
+            x: cosey::Bytes::try_from(key.as_bytes().as_ref()).unwrap(),
         }
     }
 }
