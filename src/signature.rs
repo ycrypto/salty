@@ -312,20 +312,39 @@ impl PublicKey {
     }
 }
 
-#[cfg(feature = "cose")]
-impl From<PublicKey> for CosePublicKey {
-    fn from(key: PublicKey) -> CosePublicKey {
-        CosePublicKey {
-            x: cosey::Bytes::from(key.as_bytes()),
+#[cfg(feature = "cosey-v0.3")]
+impl From<PublicKey> for cosey::Ed25519PublicKey {
+    fn from(key: PublicKey) -> Self {
+        Self {
+            x: cosey::Bytes::from_slice(key.as_bytes().as_ref()).unwrap(),
         }
     }
 }
 
-#[cfg(feature = "cose")]
-impl TryFrom<&CosePublicKey> for PublicKey {
+#[cfg(feature = "cosey-v0.3")]
+impl TryFrom<&cosey::Ed25519PublicKey> for PublicKey {
     type Error = crate::Error;
 
-    fn try_from(cose: &CosePublicKey) -> Result<PublicKey> {
+    fn try_from(cose: &cosey::Ed25519PublicKey) -> Result<PublicKey> {
+        let okp: &[u8; 32] = cose.x.as_ref().try_into().unwrap();
+        Self::try_from(okp)
+    }
+}
+
+#[cfg(feature = "cosey-v0.4")]
+impl From<PublicKey> for cosey04::Ed25519PublicKey {
+    fn from(key: PublicKey) -> Self {
+        Self {
+            x: cosey04::Bytes::from(key.as_bytes()),
+        }
+    }
+}
+
+#[cfg(feature = "cosey-v0.4")]
+impl TryFrom<&cosey04::Ed25519PublicKey> for PublicKey {
+    type Error = crate::Error;
+
+    fn try_from(cose: &cosey04::Ed25519PublicKey) -> Result<PublicKey> {
         let okp: &[u8; 32] = cose.x.as_ref().try_into().unwrap();
         Self::try_from(okp)
     }

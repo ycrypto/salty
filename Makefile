@@ -24,6 +24,7 @@ fix: fmt
 check:
 	# cargo check --all
 	cargo check -p salty
+	cargo check -p salty --all-features
 	cargo check -p salty-c-api --target thumbv7em-none-eabi
 	cargo check -p qemu-tests
 	cargo check -p wycheproof-macros

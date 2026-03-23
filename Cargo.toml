@@ -35,7 +35,7 @@ wycheproof-macros = { path = "wycheproof/macros" }
 wycheproof-parser = { path = "wycheproof/parser" }
 wycheproof-types = { path = "wycheproof/types" }
 
-cosey = { version = "0.4" }
+cosey = { version = "0.3" }
 ed25519 = { version = "2.2", default-features = false }
 hex = "0.4"
 hex-literal = "0.4"
@@ -55,6 +55,7 @@ subtle.workspace = true
 zeroize.workspace = true
 
 cosey = { workspace = true, optional = true}
+cosey04 = { package = "cosey", version = "0.4", optional = true }
 ed25519 = { workspace = true, optional = true}
 
 [dev-dependencies]
@@ -66,7 +67,10 @@ wycheproof-types.workspace = true
 [features]
 default = ["rustcrypto"]
 slow-motion = []
+# this feature is kept for compatibility and can be removed in a breaking release
 cose = ["cosey"]
+"cosey-v0.3" = ["cosey"]
+"cosey-v0.4" = ["dep:cosey04"]
 rustcrypto = ["ed25519"]
 
 [profile.release.package.salty-c-api]
